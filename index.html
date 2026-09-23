@@ -48,7 +48,7 @@
     background-color: var(--bg-page);
     color: var(--text-main);
     font-family: var(--font-sans);
-    height: 100dvh; /* 100dvh adapta-se dinamicamente às barras de navegação mobile */
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -101,7 +101,7 @@
     height: 100%;
     display: block;
     cursor: grab;
-    touch-action: none; /* Crucial para o pan/zoom via touch */
+    touch-action: none;
   }
   canvas#scene:active {
     cursor: grabbing;
@@ -348,14 +348,9 @@
   ::-webkit-scrollbar-track { background: var(--bg-page); }
   ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 4px; }
 
-
-  /* =========================================================
-     🔥 RESPONSIVIDADE PARA MOBILE 🔥
-     ========================================================= */
   @media (max-width: 900px) {
     .app-layout { flex-direction: column; }
     
-    /* Divide a tela 50/50 em modo portrait */
     .simulation-area { 
       flex: 1 1 50%; 
       min-height: 45vh; 
@@ -368,13 +363,11 @@
       border-top: 1px solid var(--border); 
     }
 
-    /* Header Compacto */
     header.app-header { padding: 8px 12px; }
     .title-area h1 { font-size: 1.1rem; }
-    .title-area p { display: none; } /* Esconde o subtítulo para ganhar espaço */
+    .title-area p { display: none; }
     .equation { font-size: 0.85rem; padding: 4px 8px; }
 
-    /* Leituras (Dashboard) Otimizadas */
     .floating-dashboard { 
       top: 8px; left: 8px; right: 8px; 
       justify-content: space-between; 
@@ -385,7 +378,6 @@
     .readout-card .value { font-size: 0.9rem; }
     .readout-card .label { font-size: 0.6rem; }
 
-    /* Botões Flutuantes Compactos */
     .sim-controls { 
       bottom: 12px; width: 95%; max-width: 400px; padding: 6px; 
     }
@@ -393,11 +385,9 @@
       flex: 1; justify-content: center; font-size: 0.75rem; padding: 8px 4px; 
     }
 
-    /* Esconde elementos não essenciais */
     .floating-legend { display: none; }
     .navigation-hint { display: none; }
 
-    /* Impede zoom automático do iOS ao focar em inputs numéricos */
     .input-with-unit input[type="number"] { font-size: 16px; width: 75px;}
   }
 </style>
@@ -440,7 +430,7 @@
     <!-- Canvas Principal -->
     <canvas id="scene" role="img" aria-label="Simulação Física"></canvas>
 
-    <!-- Legenda visual (Oculta no Mobile) -->
+    <!-- Legenda visual -->
     <div class="floating-legend">
       <div class="legend-item"><span class="dot" style="background:var(--negative)"></span> Elétron / Carga (-)</div>
       <div class="legend-item"><span class="dot" style="background:var(--positive)"></span> Próton / Carga (+)</div>
@@ -492,6 +482,10 @@
     <div class="panel-section">
       <div class="panel-title"><i class="bi bi-camera-video"></i> Visualização (Câmera)</div>
       <div class="switch-row">
+        <label for="chkAutoScale">Auto-ajustar zoom ao mudar parâmetros</label>
+        <input type="checkbox" id="chkAutoScale" checked>
+      </div>
+      <div class="switch-row">
         <label for="chkFollow">Câmera acompanha a deriva 3D</label>
         <input type="checkbox" id="chkFollow" checked>
       </div>
@@ -507,7 +501,6 @@
         <label for="chkField">Desenhar grade do Campo B</label>
         <input type="checkbox" id="chkField" checked>
       </div>
-      <!-- A Escala Dinâmica será atualizada aqui em tempo real -->
       <div class="note" id="scaleNote"></div>
     </div>
     
@@ -518,15 +511,11 @@
 <script>
 'use strict';
 
-// Constantes do SI
 const ELEMENTARY_CHARGE = 1.602176634e-19; 
 const ELECTRON_MASS = 9.1093837015e-31; 
 const PROTON_MASS = 1.67262192369e-27;
 const C_LIGHT = 299792458; 
 
-/* =========================================================================
-   MÓDULO: UNITS (Formatação Científica/SI)
-   ========================================================================= */
 const Units = (() => {
   const PREFIXES = [
     {exp:-15,sym:'f'},{exp:-12,sym:'p'},{exp:-9,sym:'n'},{exp:-6,sym:'µ'},{exp:-3,sym:'m'},
@@ -553,9 +542,6 @@ const Units = (() => {
   return { format, niceStep };
 })();
 
-/* =========================================================================
-   MÓDULO: PHYSICS (Motor Numérico 3D - Algoritmo de Boris)
-   ========================================================================= */
 const Physics = (() => {
   function cross(a, b) { return [ a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0] ]; }
   function addV(a, b) { return [a[0]+b[0], a[1]+b[1], a[2]+b[2]]; }
@@ -592,22 +578,16 @@ const Physics = (() => {
   return { advance, derivedQuantities, cross };
 })();
 
-/* =========================================================================
-   MÓDULO: RENDER (Gráficos em Canvas + Interação MOUSE/TOUCH)
-   ========================================================================= */
 const Render = (() => {
   let canvas, ctx, parent;
   let W = 0, H = 0, DPR = 1;
   
-  // Variáveis da Câmera Numérica
   let camX = 0, camY = 0, baseScale = 1;
   
-  // Variáveis Interativas (Pan & Zoom)
   let manualZoom = 1;
   let manualPanX = 0; 
   let manualPanY = 0;
   
-  // Estado de Mouse/Touch
   let isDragging = false;
   let lastMouseX = 0;
   let lastMouseY = 0;
@@ -632,7 +612,6 @@ const Render = (() => {
   }
 
   function setupInteraction() {
-    // --- 1. EVENTOS DE MOUSE (Desktop) ---
     canvas.addEventListener('mousedown', (e) => {
       isDragging = true;
       lastMouseX = e.clientX;
@@ -673,12 +652,11 @@ const Render = (() => {
 
     canvas.addEventListener('dblclick', () => { resetView(); });
 
-    // --- 2. EVENTOS TOUCH (Mobile) ---
     let initialPinchDistance = null;
     let initialPinchZoom = 1;
 
     canvas.addEventListener('touchstart', (e) => {
-      e.preventDefault(); // Impede rolagem e "pull to refresh" da página
+      e.preventDefault();
       if (e.touches.length === 1) {
         isDragging = true;
         lastMouseX = e.touches[0].clientX;
@@ -696,7 +674,6 @@ const Render = (() => {
     canvas.addEventListener('touchmove', (e) => {
       e.preventDefault(); 
       if (e.touches.length === 1 && isDragging) {
-        // PAN
         const dx = e.touches[0].clientX - lastMouseX;
         const dy = e.touches[0].clientY - lastMouseY;
         lastMouseX = e.touches[0].clientX;
@@ -706,7 +683,6 @@ const Render = (() => {
         manualPanX -= dx / totalScale;
         manualPanY += dy / totalScale;
       } else if (e.touches.length === 2 && initialPinchDistance) {
-        // PINCH TO ZOOM
         const currentDistance = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY
@@ -714,7 +690,6 @@ const Render = (() => {
         const zoomFactor = currentDistance / initialPinchDistance;
         let newManualZoom = Math.max(0.01, Math.min(initialPinchZoom * zoomFactor, 50));
         manualZoom = newManualZoom;
-        // Obs: Versão simplificada. O zoom centra no meio da tela no mobile para manter simples
       }
     }, { passive: false });
 
@@ -726,7 +701,6 @@ const Render = (() => {
       if (e.touches.length === 0) {
         isDragging = false;
       } else if (e.touches.length === 1) {
-        // Restaura âncora do dedo restante para evitar salto de pan
         lastMouseX = e.touches[0].clientX;
         lastMouseY = e.touches[0].clientY;
         isDragging = true;
@@ -785,7 +759,6 @@ const Render = (() => {
     
     const stepM = Units.niceStep(80 / totalScale);
     
-    // Calcula as bordas visíveis
     const startWX = Math.floor((effectiveCamX - (W/2)/totalScale) / stepM) * stepM;
     const startWY = Math.floor((effectiveCamY - (H/2)/totalScale) / stepM) * stepM;
     const endWX = effectiveCamX + (W/2)/totalScale;
@@ -799,9 +772,9 @@ const Render = (() => {
     for (let wy = startWY; wy <= endWY + stepM; wy += stepM) {
       for (let wx = startWX; wx <= endWX + stepM; wx += stepM) {
         const [x, y] = worldToScreen(wx, wy);
-        if (Bz > 0) { // Saindo da tela
+        if (Bz > 0) {
           ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2); ctx.fill();
-        } else { // Entrando na tela
+        } else {
           ctx.beginPath();
           ctx.moveTo(x-4, y-4); ctx.lineTo(x+4, y+4);
           ctx.moveTo(x-4, y+4); ctx.lineTo(x+4, y-4);
@@ -812,7 +785,6 @@ const Render = (() => {
     ctx.globalAlpha = 1.0;
   }
 
-  // HUD: Seta para Bx, By
   function drawInPlaneFieldArrow(Bx, By) {
     const mag = Math.hypot(Bx, By);
     if (mag < 1e-9) return;
@@ -902,9 +874,6 @@ const Render = (() => {
   return { init, resize, frame, clearTrail, pushTrailPoint, setScale, getTotalScale, resetView, getSize: () => ({W, H}) };
 })();
 
-/* =========================================================================
-   MÓDULO: UI (Gerenciamento de DOM e Entradas)
-   ========================================================================= */
 const UI = (() => {
   const values = {};
   const controls = {};
@@ -1007,6 +976,7 @@ const UI = (() => {
       B: [values.Bx, values.By, values.Bz]
     }),
     flags: () => ({
+      autoScale: document.getElementById('chkAutoScale').checked,
       showVectors: document.getElementById('chkVectors').checked,
       showTrail: document.getElementById('chkTrail').checked,
       showField: document.getElementById('chkField').checked,
@@ -1015,9 +985,6 @@ const UI = (() => {
   };
 })();
 
-/* =========================================================================
-   MÓDULO: MAIN (Orquestrador)
-   ========================================================================= */
 (function Main() {
   Render.init(document.getElementById('scene'));
   UI.init();
@@ -1039,12 +1006,13 @@ const UI = (() => {
       driftXY = [p.v0[0], p.v0[1]]; 
     }
 
-    let L = dq0.r && dq0.r > 0 ? dq0.r : Math.max(dq0.speed, 1e-9);
-    const { W, H } = Render.getSize();
-    const targetPx = Math.min(W, H) * 0.35; 
-    Render.setScale(targetPx / L);
-    
-    Render.resetView();
+    if (UI.flags().autoScale) {
+      let L = dq0.r && dq0.r > 0 ? dq0.r : Math.max(dq0.speed, 1e-9);
+      const { W, H } = Render.getSize();
+      const targetPx = Math.min(W, H) * 0.35; 
+      Render.setScale(targetPx / L);
+      Render.resetView();
+    }
 
     if (dq0.T) {
       autoPace = dq0.T / PACE_S_PER_REV;
@@ -1126,7 +1094,6 @@ const UI = (() => {
     requestAnimationFrame(loop);
   }
 
-  // Setup de Eventos
   UI.onChange(resetState);
   document.getElementById('btnPlay').addEventListener('click', (e) => {
     playing = !playing;
