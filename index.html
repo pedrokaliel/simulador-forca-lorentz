@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Simulador Interativo — Força de Lorentz</title>
 <!-- Fontes -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -48,7 +48,7 @@
     background-color: var(--bg-page);
     color: var(--text-main);
     font-family: var(--font-sans);
-    height: 100vh;
+    height: 100dvh; /* 100dvh adapta-se dinamicamente às barras de navegação mobile */
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -87,11 +87,6 @@
     overflow: hidden;
   }
 
-  @media (max-width: 900px) {
-    .app-layout { flex-direction: column; }
-    .control-panel { max-height: 40vh; border-left: none; border-top: 1px solid var(--border); }
-  }
-
   /* Área de Simulação (Canvas) */
   .simulation-area {
     flex: 1;
@@ -106,7 +101,7 @@
     height: 100%;
     display: block;
     cursor: grab;
-    touch-action: none; /* Previne rolagem da página ao interagir com o canvas */
+    touch-action: none; /* Crucial para o pan/zoom via touch */
   }
   canvas#scene:active {
     cursor: grabbing;
@@ -352,6 +347,59 @@
   ::-webkit-scrollbar { width: 8px; }
   ::-webkit-scrollbar-track { background: var(--bg-page); }
   ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 4px; }
+
+
+  /* =========================================================
+     🔥 RESPONSIVIDADE PARA MOBILE 🔥
+     ========================================================= */
+  @media (max-width: 900px) {
+    .app-layout { flex-direction: column; }
+    
+    /* Divide a tela 50/50 em modo portrait */
+    .simulation-area { 
+      flex: 1 1 50%; 
+      min-height: 45vh; 
+    }
+    
+    .control-panel { 
+      flex: 1 1 50%; 
+      max-width: 100%; 
+      border-left: none; 
+      border-top: 1px solid var(--border); 
+    }
+
+    /* Header Compacto */
+    header.app-header { padding: 8px 12px; }
+    .title-area h1 { font-size: 1.1rem; }
+    .title-area p { display: none; } /* Esconde o subtítulo para ganhar espaço */
+    .equation { font-size: 0.85rem; padding: 4px 8px; }
+
+    /* Leituras (Dashboard) Otimizadas */
+    .floating-dashboard { 
+      top: 8px; left: 8px; right: 8px; 
+      justify-content: space-between; 
+    }
+    .readout-card { 
+      flex: 1; padding: 4px 6px; text-align: center; 
+    }
+    .readout-card .value { font-size: 0.9rem; }
+    .readout-card .label { font-size: 0.6rem; }
+
+    /* Botões Flutuantes Compactos */
+    .sim-controls { 
+      bottom: 12px; width: 95%; max-width: 400px; padding: 6px; 
+    }
+    .sim-controls button { 
+      flex: 1; justify-content: center; font-size: 0.75rem; padding: 8px 4px; 
+    }
+
+    /* Esconde elementos não essenciais */
+    .floating-legend { display: none; }
+    .navigation-hint { display: none; }
+
+    /* Impede zoom automático do iOS ao focar em inputs numéricos */
+    .input-with-unit input[type="number"] { font-size: 16px; width: 75px;}
+  }
 </style>
 </head>
 <body>
@@ -370,13 +418,13 @@
   <section class="simulation-area" id="simArea">
     
     <div class="navigation-hint">
-      <i class="bi bi-mouse3"></i> Arraste para mover, Scroll para zoom (duplo clique reseta)
+      <i class="bi bi-mouse3"></i> Arraste para mover, Scroll para zoom
     </div>
 
     <!-- Leituras Flutuantes -->
     <div class="floating-dashboard">
       <div class="readout-card">
-        <div class="label">Raio de Giro (r)</div>
+        <div class="label">Raio (r)</div>
         <div class="value" id="outR">—</div>
       </div>
       <div class="readout-card">
@@ -392,7 +440,7 @@
     <!-- Canvas Principal -->
     <canvas id="scene" role="img" aria-label="Simulação Física"></canvas>
 
-    <!-- Legenda visual -->
+    <!-- Legenda visual (Oculta no Mobile) -->
     <div class="floating-legend">
       <div class="legend-item"><span class="dot" style="background:var(--negative)"></span> Elétron / Carga (-)</div>
       <div class="legend-item"><span class="dot" style="background:var(--positive)"></span> Próton / Carga (+)</div>
@@ -404,8 +452,8 @@
     <!-- Controles de Playback -->
     <div class="sim-controls">
       <button id="btnPlay" class="primary"><i class="bi bi-pause-fill"></i> Pausar</button>
-      <button id="btnReset"><i class="bi bi-arrow-counterclockwise"></i> Reiniciar</button>
-      <button id="btnClearTrail"><i class="bi bi-eraser-fill"></i> Limpar Rastro</button>
+      <button id="btnReset"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+      <button id="btnClearTrail"><i class="bi bi-eraser-fill"></i> Limpar</button>
     </div>
 
   </section>
@@ -545,7 +593,7 @@ const Physics = (() => {
 })();
 
 /* =========================================================================
-   MÓDULO: RENDER (Gráficos em Canvas + Interação do Usuário)
+   MÓDULO: RENDER (Gráficos em Canvas + Interação MOUSE/TOUCH)
    ========================================================================= */
 const Render = (() => {
   let canvas, ctx, parent;
@@ -554,12 +602,12 @@ const Render = (() => {
   // Variáveis da Câmera Numérica
   let camX = 0, camY = 0, baseScale = 1;
   
-  // Variáveis Interativas (Mouse Pan & Zoom)
+  // Variáveis Interativas (Pan & Zoom)
   let manualZoom = 1;
   let manualPanX = 0; 
   let manualPanY = 0;
   
-  // Estado do Mouse
+  // Estado de Mouse/Touch
   let isDragging = false;
   let lastMouseX = 0;
   let lastMouseY = 0;
@@ -580,18 +628,17 @@ const Render = (() => {
     parent = canvas.parentElement;
     window.addEventListener('resize', resize);
     resize(); 
-    setupMouseInteraction();
+    setupInteraction();
   }
 
-  function setupMouseInteraction() {
-    // Iniciar Pan
+  function setupInteraction() {
+    // --- 1. EVENTOS DE MOUSE (Desktop) ---
     canvas.addEventListener('mousedown', (e) => {
       isDragging = true;
       lastMouseX = e.clientX;
       lastMouseY = e.clientY;
     });
 
-    // Mover Pan
     window.addEventListener('mousemove', (e) => {
       if (!isDragging) return;
       const dx = e.clientX - lastMouseX;
@@ -600,42 +647,91 @@ const Render = (() => {
       lastMouseY = e.clientY;
       
       const totalScale = baseScale * manualZoom;
-      // Inverte x e y pro World space
       manualPanX -= dx / totalScale;
       manualPanY += dy / totalScale;
     });
 
-    // Terminar Pan
     window.addEventListener('mouseup', () => { isDragging = false; });
     window.addEventListener('mouseleave', () => { isDragging = false; });
 
-    // Zoom com Scroll
     canvas.addEventListener('wheel', (e) => {
-      e.preventDefault(); // Impede scroll da página
-      
+      e.preventDefault(); 
       const rect = canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left;
       const my = e.clientY - rect.top;
 
       const oldTotalScale = baseScale * manualZoom;
-      
-      // Fator de zoom suave
       const zoomFactor = e.deltaY < 0 ? 1.15 : (1 / 1.15);
-      let newManualZoom = manualZoom * zoomFactor;
       
-      // Limites de zoom
-      newManualZoom = Math.max(0.01, Math.min(newManualZoom, 50));
+      let newManualZoom = Math.max(0.01, Math.min(manualZoom * zoomFactor, 50));
       const newTotalScale = baseScale * newManualZoom;
 
-      // Compensar o Pan para o zoom centralizar onde o ponteiro do mouse está
       manualPanX += (mx - W/2) * (1 / oldTotalScale - 1 / newTotalScale);
       manualPanY -= (my - H/2) * (1 / oldTotalScale - 1 / newTotalScale);
-
       manualZoom = newManualZoom;
     }, { passive: false });
 
-    // Duplo clique para resetar a visualização
     canvas.addEventListener('dblclick', () => { resetView(); });
+
+    // --- 2. EVENTOS TOUCH (Mobile) ---
+    let initialPinchDistance = null;
+    let initialPinchZoom = 1;
+
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault(); // Impede rolagem e "pull to refresh" da página
+      if (e.touches.length === 1) {
+        isDragging = true;
+        lastMouseX = e.touches[0].clientX;
+        lastMouseY = e.touches[0].clientY;
+      } else if (e.touches.length === 2) {
+        isDragging = false;
+        initialPinchDistance = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        initialPinchZoom = manualZoom;
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault(); 
+      if (e.touches.length === 1 && isDragging) {
+        // PAN
+        const dx = e.touches[0].clientX - lastMouseX;
+        const dy = e.touches[0].clientY - lastMouseY;
+        lastMouseX = e.touches[0].clientX;
+        lastMouseY = e.touches[0].clientY;
+
+        const totalScale = baseScale * manualZoom;
+        manualPanX -= dx / totalScale;
+        manualPanY += dy / totalScale;
+      } else if (e.touches.length === 2 && initialPinchDistance) {
+        // PINCH TO ZOOM
+        const currentDistance = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const zoomFactor = currentDistance / initialPinchDistance;
+        let newManualZoom = Math.max(0.01, Math.min(initialPinchZoom * zoomFactor, 50));
+        manualZoom = newManualZoom;
+        // Obs: Versão simplificada. O zoom centra no meio da tela no mobile para manter simples
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      if (e.touches.length < 2) {
+        initialPinchDistance = null;
+      }
+      if (e.touches.length === 0) {
+        isDragging = false;
+      } else if (e.touches.length === 1) {
+        // Restaura âncora do dedo restante para evitar salto de pan
+        lastMouseX = e.touches[0].clientX;
+        lastMouseY = e.touches[0].clientY;
+        isDragging = true;
+      }
+    }, { passive: false });
   }
 
   function resize() {
@@ -689,7 +785,7 @@ const Render = (() => {
     
     const stepM = Units.niceStep(80 / totalScale);
     
-    // Calcula as bordas visíveis em metros pra otimizar o laço
+    // Calcula as bordas visíveis
     const startWX = Math.floor((effectiveCamX - (W/2)/totalScale) / stepM) * stepM;
     const startWY = Math.floor((effectiveCamY - (H/2)/totalScale) / stepM) * stepM;
     const endWX = effectiveCamX + (W/2)/totalScale;
@@ -716,14 +812,14 @@ const Render = (() => {
     ctx.globalAlpha = 1.0;
   }
 
-  // HUD: Seta para Bx, By (Campo no plano) fixada na tela
+  // HUD: Seta para Bx, By
   function drawInPlaneFieldArrow(Bx, By) {
     const mag = Math.hypot(Bx, By);
     if (mag < 1e-9) return;
     
-    const cx = 50, cy = H - 50, sc = 30; // Canto inferior esquerdo da tela
+    const cx = 50, cy = H - 50, sc = 30; 
     const dx = (Bx/mag) * Math.min(sc, sc*mag/1.5);
-    const dy = -(By/mag) * Math.min(sc, sc*mag/1.5); // Tela inverte o y
+    const dy = -(By/mag) * Math.min(sc, sc*mag/1.5); 
     
     drawArrow(cx, cy, cx+dx, cy+dy, COLORS.field, 3);
     ctx.fillStyle = COLORS.field;
@@ -832,7 +928,7 @@ const UI = (() => {
   const PRESETS = [
     { label:'Elétron B=1T', sign:-1, qAbs:1, Bz:1, Bx:0, By:0, vx:1e7, vy:0, vz:0 },
     { label:'Próton B=1T', sign:1, qAbs:1, Bz:1, Bx:0, By:0, vx:1e6, vy:0, vz:0 },
-    { label:'Hélice 3D (Deriva)', sign:-1, qAbs:1, Bz:1, Bx:0.5, By:0, vx:1e7, vy:0, vz:6e6 }
+    { label:'Hélice 3D', sign:-1, qAbs:1, Bz:1, Bx:0.5, By:0, vx:1e7, vy:0, vz:6e6 }
   ];
 
   function buildControl(cfg, container) {
@@ -934,7 +1030,6 @@ const UI = (() => {
     const p = UI.getParams();
     dq0 = Physics.derivedQuantities([0,0,0, p.v0[0], p.v0[1], p.v0[2]], {q:p.q, m:p.m, B:p.B});
     
-    // Cálculo do Drift (Deriva 3D da Câmera)
     const Bmag = Math.hypot(p.B[0], p.B[1], p.B[2]);
     if (Bmag > 1e-30) {
       const Bhat = [p.B[0]/Bmag, p.B[1]/Bmag, p.B[2]/Bmag];
@@ -944,16 +1039,13 @@ const UI = (() => {
       driftXY = [p.v0[0], p.v0[1]]; 
     }
 
-    // Auto-escala Espacial Inicial
     let L = dq0.r && dq0.r > 0 ? dq0.r : Math.max(dq0.speed, 1e-9);
     const { W, H } = Render.getSize();
     const targetPx = Math.min(W, H) * 0.35; 
     Render.setScale(targetPx / L);
     
-    // Reseta Interações (Pan e Zoom)
     Render.resetView();
 
-    // Auto-escala Temporal
     if (dq0.T) {
       autoPace = dq0.T / PACE_S_PER_REV;
       substepDt = dq0.T / 50; 
@@ -985,7 +1077,6 @@ const UI = (() => {
     `;
   }
 
-  // Atualiza em tempo real as informações de texto influenciadas pela Câmera e UI
   function updateDynamicInfo() {
     const totalScale = Render.getTotalScale();
     const pxScaleText = `Escala Adaptativa: <b>1 px = ${Units.format(1 / totalScale, 'm')}</b>`;
@@ -1020,11 +1111,10 @@ const UI = (() => {
     const F = Physics.cross([state.y[3], state.y[4], state.y[5]], p.B).map(c => c * p.q);
     const flags = UI.flags();
     
-    updateDynamicInfo(); // Atualiza painel caso o usuário dê zoom
+    updateDynamicInfo(); 
     
     Render.frame(state, {
       ...flags,
-      // Se seguir a deriva, a câmera centraliza no "tubo" da hélice e permite ver ela sendo desenhada perfeitamente
       camera: flags.showFollow ? {x: driftXY[0] * simTime, y: driftXY[1] * simTime} : {x:0, y:0},
       sign: p.sign, 
       Bx: p.B[0], 
