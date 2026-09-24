@@ -31,7 +31,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:gra
 aside{flex:none;width:clamp(300px,32vw,400px);min-height:0;background:var(--pn);border-left:1px solid var(--bd);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .sec{padding:14px 16px;border-bottom:1px solid var(--bd)}
 h2{font-size:.85rem;color:var(--mu);margin-bottom:10px}
-button{font:600 .8rem system-ui,sans-serif;padding:7px 13px;border-radius:18px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);cursor:pointer}
+button{font:600 .8rem system-ui,sans-serif;padding:7px 13px;border-radius:18px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);cursor:pointer;transition:all 0.15s ease}
 button:hover{background:var(--bd)}
 button.pri,button.on{background:var(--pr);border-color:var(--pr);color:#fff}
 .row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
@@ -68,30 +68,32 @@ input[type=range]{width:100%;accent-color:var(--pr)}
     <canvas id="scene" role="img" aria-label="Trajetória 3D da partícula carregada"></canvas>
     <div id="leg"><span><i style="background:#F59E0B"></i>v<b class="lt"> velocidade</b></span><span><i style="background:#8B5CF6"></i>F<b class="lt"> força (∝ |v⊥|)</b></span><span><i style="background:#10B981"></i>B<b class="lt"> campo</b></span></div>
   </div>
-  <div id="bar"><button id="play" class="pri">Pausar</button><button id="reset">Reset</button><button id="clr">Limpar</button></div>
+  <div id="bar"><button id="play" class="pri">Iniciar</button><button id="reset">Resetar Posição</button><button id="clr">Limpar Rastro</button></div>
 </section>
 <aside>
   <div class="sec"><h2>Cenários</h2><div class="row" id="pre"></div></div>
   <div class="sec"><h2>Partícula</h2><div class="row" id="kinds"></div><div class="note" id="cap"></div></div>
-  <div class="sec"><h2>Campo magnético B (T)</h2><div id="gB"></div></div>
+  <div class="sec"><h2>Campo magnético B (T)</h2><div id="gB"></div>
+    <div class="note"><b>Dica:</b> Mude o campo enquanto a simulação roda para ver a curvatura e o raio da trajetória se adaptarem instantaneamente.</div>
+  </div>
   <div class="sec"><h2>Velocidade inicial v (m/s)</h2><div id="gV"></div></div>
   <div class="sec"><h2>Câmera e exibição</h2>
-    <div class="row"><button id="vTop">Topo (xy)</button><button id="vSide">Lateral (xz)</button><button id="v3d">3D</button></div>
+    <div class="row"><button id="vTop">Vista XY</button><button id="vSide">Vista XZ</button><button id="vYZ">Vista YZ</button><button id="v3d">3D livre</button></div>
+    <div class="row"><button id="fitBtn">Ajustar zoom</button><button id="alignBtn">Alinhar B à câmera</button></div>
     <div class="sw"><label for="cFollow">Câmera acompanha o centro de guia</label><input type="checkbox" id="cFollow" checked></div>
     <div class="sw"><label for="cVec">Mostrar vetores v e F</label><input type="checkbox" id="cVec" checked></div>
     <div class="sw"><label for="cTrail">Desenhar trajetória</label><input type="checkbox" id="cTrail" checked></div>
     <div class="sw"><label for="cField">Desenhar linhas de campo B</label><input type="checkbox" id="cField" checked></div>
-    <div class="sw"><label for="cCmp">Modo comparativo (mesmo tempo e escala para todas as partículas)</label><input type="checkbox" id="cCmp"></div>
-    <div class="note">Arraste para girar · scroll ou pinça para zoom · dois cliques reiniciam a câmera.</div>
+    <div class="sw"><label for="cRadius">Mostrar disco de referência do raio r</label><input type="checkbox" id="cRadius" checked></div>
+    <div class="note">Arraste (1 dedo) para girar · scroll ou pinça para zoom · duplo clique/toque reinicia a câmera.</div>
     <div class="note" id="info"></div>
   </div>
 </aside>
 </main>
 <script>
 'use strict';
-const E=1.602176634e-19,ME=9.1093837015e-31,MP=1.67262192369e-27,MA=6.6446573357e-27,C=299792458;
-const PART={e:{q:-1,m:ME,n:'Elétron'},x:{q:1,m:ME,n:'Pósitron'},p:{q:1,m:MP,n:'Próton'},a:{q:2,m:MA,n:'Partícula α'}};
-const REF_T=2*Math.PI*ME/E, REF_L=ME*1e7/E;   // elétron, 1 T, 1e7 m/s (referência do modo comparativo)
+const E=1.602176634e-19,ME=9.1093837015e-31,MP=1.67262192369e-27,C=299792458;
+const PART={e:{q:-1,m:ME,n:'Elétron'},p:{q:1,m:MP,n:'Próton'}};
 const $=id=>document.getElementById(id);
 const add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],sc=(a,k)=>[a[0]*k,a[1]*k,a[2]*k];
 const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],nrm=a=>Math.hypot(a[0],a[1],a[2]);
@@ -105,14 +107,13 @@ function fmt(v,u){
 }
 
 /* ---------- Física ---------- */
-// Boris (rotação pura): conserva |v|. m aqui já é a massa relativística γm.
 function boris(v,q,m,B,dt){
   const k=q*dt/(2*m),t=sc(B,k),t2=dot(t,t);
   const vp=add(v,cr(v,t));
   return add(v,cr(vp,sc(t,2/(1+t2))));
 }
 function derive(v,P){
-  const sp=nrm(v),b=sp/C,g=1/Math.sqrt(1-b*b),Bm=nrm(P.B);
+  const sp=nrm(v),b=Math.min(1,sp/C),g=1/Math.sqrt(Math.max(1e-12,1-b*b)),Bm=nrm(P.B);
   if(Bm<1e-12) return {g,sp,Bm:0};
   const Bh=sc(P.B,1/Bm),vpar=dot(v,Bh),vperp=Math.sqrt(Math.max(0,sp*sp-vpar*vpar));
   const w=Math.abs(P.q)*Bm/(g*P.m),T=2*Math.PI/w;
@@ -122,58 +123,76 @@ function derive(v,P){
 /* ---------- Controles ---------- */
 const val={Bx:.5,By:0,Bz:1,vx:1e7,vy:0,vz:6e6};let kind='e';const ctl={};
 const CFG=[['gB','Bx','Bx',-2,2,.1,'T'],['gB','By','By',-2,2,.1,'T'],['gB','Bz','Bz',-2,2,.1,'T'],
- ['gV','vx','vx',-1e8,1e8,1e6,'m/s'],['gV','vy','vy',-1e8,1e8,1e6,'m/s'],['gV','vz','vz',-1e8,1e8,1e6,'m/s']];
+ ['gV','vx','vx',-C,C,1e6,'m/s'],['gV','vy','vy',-C,C,1e6,'m/s'],['gV','vz','vz',-C,C,1e6,'m/s']];
+
 CFG.forEach(([g,id,lb,mn,mx,st,u])=>{
   const w=document.createElement('div');w.className='fld';
   w.innerHTML=`<div class="fh"><label>${lb}</label><div><input type="number" step="any" value="${val[id]}"> ${u}</div></div><input type="range" min="${mn}" max="${mx}" step="${st}" value="${val[id]}">`;
   $(g).appendChild(w);
   const num=w.querySelector('input[type=number]'),rng=w.querySelector('input[type=range]');
-  const set=(v,silent)=>{v=Math.min(mx,Math.max(mn,v));val[id]=v;num.value=v;rng.value=v;if(!silent)reset();};
+  
+  const set=(v_val,silent)=>{
+    v_val=Math.min(mx,Math.max(mn,v_val));
+    val[id]=v_val; num.value=v_val; rng.value=v_val;
+    if(!silent){
+      if(id.startsWith('B')){
+        // Altera APENAS o campo B, preservando a posição e tempo para transição suave
+        P.B = [val.Bx, val.By, val.Bz];
+        d = derive(v, P);
+        rate = d.Bm && d.T ? d.T/2 : 1/3;
+        gc0 = guide();
+        readouts(); info();
+      } else {
+        // Altera a velocidade inicial (reseta a posição)
+        reset(false);
+      }
+    }
+  };
   rng.oninput=()=>set(parseFloat(rng.value));
   num.onchange=()=>set(parseFloat(num.value)||0);
   ctl[id]=set;
 });
+
 Object.keys(PART).forEach(k=>{
   const b=document.createElement('button');b.textContent=PART[k].n;b.dataset.k=k;
-  b.onclick=()=>{setKind(k);reset();};$('kinds').appendChild(b);
+  b.onclick=()=>{setKind(k);reset(true);};$('kinds').appendChild(b);
 });
 function setKind(k){kind=k;document.querySelectorAll('#kinds button').forEach(b=>b.className=b.dataset.k===k?'on':'');}
+
 const PRE=[['Elétron circular','e',0,0,1,1e7,0,0],['Próton circular','p',0,0,1,1e6,0,0],['Hélice 3D (elétron)','e',.5,0,1,1e7,0,6e6],
- ['Hélice 3D (próton)','p',0,.6,.8,2e6,0,1e6],['Partícula α','a',0,0,1,1e6,0,5e5],['v ∥ B (reta)','e',0,0,1,0,0,1e7],['Relativístico (0,33c)','e',0,0,1,1e8,0,0]];
+ ['Hélice 3D (próton)','p',0,.6,.8,2e6,0,1e6],['v ∥ B (reta)','e',0,0,1,0,0,1e7],['Relativístico (0,33c)','e',0,0,1,1e8,0,0]];
 PRE.forEach(p=>{
   const b=document.createElement('button');b.textContent=p[0];
-  b.onclick=()=>{setKind(p[1]);['Bx','By','Bz','vx','vy','vz'].forEach((id,i)=>ctl[id](p[2+i],true));reset();};
+  b.onclick=()=>{setKind(p[1]);['Bx','By','Bz','vx','vy','vz'].forEach((id,i)=>ctl[id](p[2+i],true));reset(true);};
   $('pre').appendChild(b);
 });
 setKind('e');
 
 /* ---------- Estado ---------- */
 const cv=$('scene'),cx=cv.getContext('2d');
-let W=0,H=0,scale=1,zoom=1,yaw=-.7,pitch=.9,playing=true,lastT=null,fc=0;
+// Inicia Pausado!
+let W=0,H=0,scale=1,zoom=1,yaw=-.7,pitch=.9,playing=false,lastT=null,fc=0;
 let P,x,v,gm,d,rate,tSim,gc0,sp0,trail=[];
 const FLD='#10B981',VEL='#F59E0B',FRC='#8B5CF6';
 
 function params(){
   const k=PART[kind];let v0=[val.vx,val.vy,val.vz];const s=nrm(v0);
-  if(s>.99*C)v0=sc(v0,.99*C/s);
+  if(s>C)v0=sc(v0,C/s);
   return {q:k.q*E,m:k.m,sign:Math.sign(k.q),name:k.n,B:[val.Bx,val.By,val.Bz],v0};
 }
-function guide(){ // centro de guia: x + γm(v×B)/(qB²)
+function guide(){
   return d.Bm?add(x,sc(cr(v,P.B),gm/(P.q*d.Bm*d.Bm))):x.slice();
 }
 function fit(){
   if(!W||!d)return;
-  let L;
-  if($('cCmp').checked)L=REF_L;
-  else if(d.Bm)L=Math.max(d.r,Math.abs(d.pitch)/10);
-  else L=d.sp*3;
+  let L=d.Bm?Math.max(d.r,Math.abs(d.pitch)/10):d.sp*3;
   if(!(L>0))L=1;
   scale=.3*Math.min(W,H)/L;
 }
-function reset(){
+function reset(fitView){
   P=params();x=[0,0,0];v=P.v0.slice();d=derive(v,P);gm=d.g*P.m;sp0=d.sp;tSim=0;
-  rate=$('cCmp').checked?REF_T/2:(d.Bm&&d.T?d.T/2:1/3);
-  gc0=guide();trail=[[0,0,0]];fit();readouts();info();
+  rate=d.Bm&&d.T?d.T/2:1/3;
+  gc0=guide();trail=[[0,0,0]];if(fitView)fit();readouts();info();
 }
 function readouts(){
   const cards=[['Raio r',d.Bm?fmt(d.r,'m'):'—'],['Período T',d.Bm?fmt(d.T,'s'):'—'],['|v|',fmt(d.sp,'m/s')+' ('+(d.sp/C*100).toFixed(1)+'% c)'],
@@ -185,21 +204,26 @@ function info(){
   const deg=a=>(a*180/Math.PI).toFixed(1)+'°';
   let s=`Tempo simulado: <b>${fmt(tSim,'s')}</b>`+(d.Bm?` (${(tSim/d.T).toFixed(2)} voltas)`:'')+`<br>Ritmo: 1 s real = <b>${fmt(rate,'s')}</b> simulados<br>Escala: 1 px = <b>${fmt(1/(scale*zoom),'m')}</b>`;
   if(d.Bm){
-    const w=sub(x,gc0),wp=sub(w,sc(d.Bh,dot(w,d.Bh))),rm=nrm(wp);
-    s+=`<br>Ângulo entre v e B: <b>${deg(Math.atan2(d.vperp,d.vpar))}</b><br>Verificação numérica: erro de |v| = <b>${(Math.abs(nrm(v)-sp0)/(sp0||1)).toExponential(1)}</b>`+(d.r>0?`; raio medido/teórico = <b>${(rm/d.r).toFixed(4)}</b>`:'');
+    const align=dot(forwardVec(),d.Bh);
+    s+=`<br>Ângulo entre v e B: <b>${deg(Math.atan2(d.vperp,d.vpar))}</b>`;
+    if(Math.abs(align)>.966)s+=`<br>Câmera alinhada com B: <b>${align>0?'⊗ campo entrando na tela':'⊙ campo saindo da tela'}</b>`;
   }else s+='<br>Sem campo: movimento retilíneo uniforme.';
   $('info').innerHTML=s;
 }
 
-/* ---------- Projeção 3D ortográfica (z para cima; yaw em z, pitch em x) ---------- */
+/* ---------- Projeção ---------- */
 let cam=[0,0,0];
 function rot(p){
   const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
   const xr=p[0]*cy+p[1]*sy,yr=-p[0]*sy+p[1]*cy;
   return [xr,p[2]*cp+yr*sp];
 }
+function forwardVec(){
+  const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+  return [-sy*cp,cy*cp,-sp];
+}
 function proj(p){const r=rot(sub(p,cam)),S=scale*zoom;return [W/2+r[0]*S,H/2-r[1]*S];}
-const Lw=()=>.3*Math.min(W,H)/(scale*zoom); // comprimento-base em metros para ~30% da tela
+const Lw=()=>.3*Math.min(W,H)/(scale*zoom);
 function arrow(a,b,col,w,hl){
   const dx=b[0]-a[0],dy=b[1]-a[1];
   cx.strokeStyle=cx.fillStyle=col;cx.lineWidth=w;cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.stroke();
@@ -207,10 +231,12 @@ function arrow(a,b,col,w,hl){
   const an=Math.atan2(dy,dx);cx.beginPath();cx.moveTo(b[0],b[1]);
   cx.lineTo(b[0]-hl*Math.cos(an-.4),b[1]-hl*Math.sin(an-.4));cx.lineTo(b[0]-hl*Math.cos(an+.4),b[1]-hl*Math.sin(an+.4));cx.closePath();cx.fill();
 }
-function drawField(g){
-  if(!d.Bm)return;
-  const Bh=d.Bh,l=Lw(),a=Math.abs(Bh[0])<.9?[1,0,0]:[0,1,0];
-  let e1=cr(Bh,a);e1=sc(e1,1/nrm(e1));const e2=cr(Bh,e1),s0=dot(g,Bh),st=l*.9;
+function fieldBasis(Bh){
+  const a=Math.abs(Bh[0])<.9?[1,0,0]:[0,1,0];
+  let e1=cr(Bh,a);e1=sc(e1,1/nrm(e1));return [e1,cr(Bh,e1)];
+}
+function drawFieldArrows(g,Bh,l){
+  const [e1,e2]=fieldBasis(Bh),s0=dot(g,Bh),st=l*.9;
   cx.globalAlpha=.4;
   for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){
     const base=add(g,add(sc(e1,i*1.6*l),sc(e2,j*1.6*l)));
@@ -220,27 +246,72 @@ function drawField(g){
   }
   cx.globalAlpha=1;
 }
+function drawFieldDots(g,Bh,align,l){
+  const [e1,e2]=fieldBasis(Bh),st=l*.6;
+  cx.globalAlpha=.55;
+  for(let i=-5;i<=5;i++)for(let j=-5;j<=5;j++){
+    const p=add(g,add(sc(e1,i*st),sc(e2,j*st))),s=proj(p);
+    if(s[0]<-30||s[0]>W+30||s[1]<-30||s[1]>H+30)continue;
+    if(align>0){
+      cx.strokeStyle=FLD;cx.lineWidth=2;cx.beginPath();
+      cx.moveTo(s[0]-5,s[1]-5);cx.lineTo(s[0]+5,s[1]+5);cx.moveTo(s[0]-5,s[1]+5);cx.lineTo(s[0]+5,s[1]-5);cx.stroke();
+    }else{
+      cx.fillStyle=FLD;cx.beginPath();cx.arc(s[0],s[1],3.2,0,7);cx.fill();
+    }
+  }
+  cx.globalAlpha=1;
+}
+function drawField(g){
+  if(!d.Bm)return;
+  const Bh=d.Bh,l=Lw();
+  if(!(l>1e-9))return;
+  const align=dot(forwardVec(),Bh);
+  if(Math.abs(align)>.966)drawFieldDots(g,Bh,align,l);
+  else drawFieldArrows(g,Bh,l);
+}
+// Desenho aprimorado do disco orbital
+function drawGuideCircle(g,Bh,r){
+  if(!(r>1e-12))return;
+  const [e1,e2]=fieldBasis(Bh);
+  cx.beginPath();
+  for(let i=0;i<=64;i++){
+    const th=i/64*2*Math.PI,p=add(g,add(sc(e1,r*Math.cos(th)),sc(e2,r*Math.sin(th)))),s=proj(p);
+    i?cx.lineTo(s[0],s[1]):cx.moveTo(s[0],s[1]);
+  }
+  // Preenchimento suave do disco orbital
+  cx.fillStyle = FLD; cx.globalAlpha = 0.05; cx.fill();
+  
+  // Contorno tracejado reforçado
+  cx.strokeStyle='#6B7280'; cx.lineWidth=2; cx.setLineDash([4,6]); cx.globalAlpha=0.7;
+  cx.stroke(); cx.setLineDash([]); cx.globalAlpha=1;
+  
+  // Ponto central para destacar o centro de guia real
+  const gs=proj(g);
+  cx.fillStyle='#6B7280'; cx.beginPath(); cx.arc(gs[0],gs[1],3,0,7); cx.fill();
+}
 function draw(){
   const g=guide();cam=$('cFollow').checked?g:[0,0,0];
   cx.fillStyle='#fff';cx.fillRect(0,0,W,H);
   if($('cField').checked)drawField(g);
+  if(d.Bm&&$('cRadius').checked)drawGuideCircle(g,d.Bh,d.r);
+  
   const col=P.sign>0?'#EF4444':'#3B82F6';
   if($('cTrail').checked&&trail.length>1){
-    cx.strokeStyle=col;cx.globalAlpha=.6;cx.lineWidth=2;cx.beginPath();
+    cx.strokeStyle=col;cx.globalAlpha=.6;cx.lineWidth=2.5;cx.beginPath();
     trail.forEach((p,i)=>{const s=proj(p);i?cx.lineTo(s[0],s[1]):cx.moveTo(s[0],s[1]);});cx.stroke();cx.globalAlpha=1;
   }
+  
   const pp=proj(x);
   if($('cVec').checked&&d.sp>0){
     const l=.9*Lw();
-    arrow(pp,proj(add(x,sc(v,l/d.sp))),VEL,3,10);                         // v: direção real, projetada
-    if(d.Bm&&d.vperp>1e-9*d.sp){                                          // F: comprimento ∝ |F| = |q|v⊥B
+    arrow(pp,proj(add(x,sc(v,l/d.sp))),VEL,3,10);
+    if(d.Bm&&d.vperp>1e-9*d.sp){
       const F=sc(cr(v,P.B),P.q),Fm=Math.abs(P.q)*d.sp*d.Bm;
       arrow(pp,proj(add(x,sc(F,l/Fm))),FRC,3,10);
     }
   }
   cx.beginPath();cx.fillStyle=col;cx.arc(pp[0],pp[1],8,0,7);cx.fill();
   cx.fillStyle='#fff';cx.font='bold 12px sans-serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(P.sign>0?'+':'−',pp[0],pp[1]);
-  // gizmo dos eixos
   const o=[W-46,46];cx.font='11px sans-serif';
   [['x',[1,0,0],'#6B7280'],['y',[0,1,0],'#6B7280'],['z',[0,0,1],'#6B7280'],['B',d.Bm?d.Bh:null,FLD]].forEach(([n,u,c])=>{
     if(!u)return;const r=rot(u);arrow(o,[o[0]+r[0]*30,o[1]-r[1]*30],c,n==='B'?3:1.5,7);
@@ -277,16 +348,31 @@ cv.onpointermove=e=>{
   if(pts.size===1){yaw+=(e.clientX-o[0])*.008;pitch=Math.max(-Math.PI/2,Math.min(Math.PI/2,pitch+(e.clientY-o[1])*.008));}
   else if(pts.size===2){const n=pdist();if(pd)zoom=cz(zoom*n/pd);pd=n;}
 };
-cv.onpointerup=cv.onpointercancel=e=>{pts.delete(e.pointerId);pd=pdist();};
+let lastTap=0;
+cv.onpointerup=cv.onpointercancel=e=>{
+  if(pts.size===1){const now=performance.now();if(now-lastTap<350)view(-.7,.9);lastTap=now;}
+  pts.delete(e.pointerId);pd=pdist();
+};
 cv.addEventListener('wheel',e=>{e.preventDefault();zoom=cz(zoom*(e.deltaY<0?1.15:1/1.15));},{passive:false});
 const view=(y,p)=>{yaw=y;pitch=p;zoom=1;};
 cv.ondblclick=()=>view(-.7,.9);
-$('vTop').onclick=()=>view(0,Math.PI/2);$('vSide').onclick=()=>view(0,0);$('v3d').onclick=()=>view(-.7,.9);
-$('play').onclick=e=>{playing=!playing;e.currentTarget.textContent=playing?'Pausar':'Retomar';e.currentTarget.className=playing?'pri':'';};
-$('reset').onclick=reset;$('clr').onclick=()=>{trail=[x.slice()];};
-$('cCmp').onchange=reset;
+$('vTop').onclick=()=>view(0,Math.PI/2);$('vSide').onclick=()=>view(0,0);
+$('vYZ').onclick=()=>view(Math.PI/2,0);$('v3d').onclick=()=>view(-.7,.9);
+$('fitBtn').onclick=()=>{fit();info();};
 
-setKind('e');resize();reset();requestAnimationFrame(loop);
+$('alignBtn').onclick = () => {
+  const Bm = nrm([val.Bx, val.By, val.Bz]) || 1, f = forwardVec();
+  ctl.Bx(f[0] * Bm, true); ctl.By(f[1] * Bm, true); ctl.Bz(f[2] * Bm, true);
+  P.B = [val.Bx, val.By, val.Bz]; 
+  d = derive(v, P);
+  trail = [x.slice()]; // Limpa o rastro antigo
+  readouts(); info();
+};
+
+$('play').onclick=e=>{playing=!playing;e.currentTarget.textContent=playing?'Pausar':'Iniciar';e.currentTarget.className=playing?'pri':'';};
+$('reset').onclick=()=>{reset(true);};$('clr').onclick=()=>{trail=[x.slice()];};
+
+setKind('e');resize();reset(true);requestAnimationFrame(loop);
 </script>
 </body>
 </html>
