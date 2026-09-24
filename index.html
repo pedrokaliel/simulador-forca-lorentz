@@ -2,1110 +2,291 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Simulador Interativo — Força de Lorentz</title>
-<!-- Fontes -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<!-- Bootstrap Icons -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Simulador de Lorentz 3D</title>
 <style>
-  :root {
-    /* Paleta Pedagógica Padrão */
-    --bg-page: #F3F4F6;
-    --bg-panel: #FFFFFF;
-    --border: #E5E7EB;
-    --border-hover: #D1D5DB;
-    
-    --text-main: #1F2937;
-    --text-muted: #6B7280;
-    --text-dim: #9CA3AF;
-    
-    --primary: #2563EB;
-    --primary-hover: #1D4ED8;
-    
-    /* Cores Físicas */
-    --positive: #EF4444; 
-    --negative: #3B82F6; 
-    --field: #10B981;    
-    --force: #8B5CF6;    
-    --velocity: #F59E0B; 
-    
-    --font-sans: 'Inter', system-ui, sans-serif;
-    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-    
-    --radius-lg: 12px;
-    --radius-md: 8px;
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-float: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  
-  body {
-    background-color: var(--bg-page);
-    color: var(--text-main);
-    font-family: var(--font-sans);
-    height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  /* Header */
-  header.app-header {
-    background: var(--bg-panel);
-    border-bottom: 1px solid var(--border);
-    padding: 12px 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: var(--shadow-sm);
-    z-index: 10;
-  }
-  
-  .title-area h1 { font-size: 1.25rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
-  .title-area p { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
-  
-  .equation {
-    background: var(--bg-page);
-    padding: 6px 12px;
-    border-radius: var(--radius-md);
-    font-family: var(--font-mono);
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--primary);
-    border: 1px solid var(--border);
-  }
-
-  /* Layout Principal */
-  .app-layout {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-  }
-
-  /* Área de Simulação (Canvas) */
-  .simulation-area {
-    flex: 1;
-    position: relative;
-    background: #FFFFFF;
-    display: flex;
-    flex-direction: column;
-  }
-
-  canvas#scene {
-    width: 100%;
-    height: 100%;
-    display: block;
-    cursor: grab;
-    touch-action: none;
-  }
-  canvas#scene:active {
-    cursor: grabbing;
-  }
-
-  /* Dica de Navegação */
-  .navigation-hint {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-muted);
-    background: rgba(255, 255, 255, 0.85);
-    padding: 6px 10px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    z-index: 5;
-  }
-
-  /* Dashboard flutuante (Leituras) */
-  .floating-dashboard {
-    position: absolute;
-    top: 16px;
-    left: 16px;
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    pointer-events: none;
-    z-index: 5;
-  }
-
-  .readout-card {
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(4px);
-    border: 1px solid var(--border);
-    padding: 8px 12px;
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
-    pointer-events: auto;
-  }
-
-  .readout-card .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; }
-  .readout-card .value { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 500; color: var(--text-main); margin-top: 2px; }
-  .readout-card .unit { font-size: 0.8rem; color: var(--text-dim); }
-
-  /* Controles Flutuantes da Simulação */
-  .sim-controls {
-    position: absolute;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--bg-panel);
-    padding: 8px;
-    border-radius: 50px;
-    box-shadow: var(--shadow-float);
-    display: flex;
-    gap: 8px;
-    border: 1px solid var(--border);
-    z-index: 5;
-  }
-
-  button {
-    font-family: var(--font-sans);
-    font-weight: 600;
-    font-size: 0.85rem;
-    padding: 8px 16px;
-    border-radius: 20px;
-    border: 1px solid var(--border);
-    background: var(--bg-page);
-    color: var(--text-main);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  button:hover { background: var(--border); }
-  button.primary { background: var(--primary); color: white; border-color: var(--primary); }
-  button.primary:hover { background: var(--primary-hover); }
-
-  /* Legenda Flutuante */
-  .floating-legend {
-    position: absolute;
-    bottom: 16px;
-    right: 16px;
-    background: rgba(255, 255, 255, 0.85);
-    padding: 10px 14px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    font-size: 0.75rem;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    pointer-events: none;
-  }
-  .legend-item { display: flex; align-items: center; gap: 6px; font-weight: 500;}
-  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-
-  /* Painel de Controle Lateral */
-  .control-panel {
-    width: 100%;
-    max-width: 400px;
-    background: var(--bg-panel);
-    border-left: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    box-shadow: -2px 0 10px rgba(0,0,0,0.02);
-  }
-
-  .panel-section {
-    padding: 20px;
-    border-bottom: 1px solid var(--border);
-  }
-  .panel-title {
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    font-weight: 700;
-    color: var(--text-muted);
-    letter-spacing: 0.05em;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .panel-title i { font-size: 1.1rem; color: var(--primary); }
-
-  /* Accordion 3D (Details) */
-  details.advanced-section summary {
-    cursor: pointer;
-    list-style: none;
-    margin-bottom: 0;
-  }
-  details.advanced-section summary::-webkit-details-marker { display: none; }
-  details.advanced-section summary::after {
-    content: '\F282'; 
-    font-family: 'bootstrap-icons';
-    margin-left: auto;
-    font-size: 1rem;
-    transition: transform 0.2s;
-    color: var(--text-dim);
-  }
-  details.advanced-section[open] summary { margin-bottom: 16px; }
-  details.advanced-section[open] summary::after { transform: rotate(180deg); }
-
-  /* Controles de Input */
-  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-  .field:last-child { margin-bottom: 0; }
-  .field-header { display: flex; justify-content: space-between; align-items: center; }
-  .field-header label { font-size: 0.85rem; font-weight: 500; color: var(--text-main); }
-  
-  .input-with-unit {
-    display: flex;
-    align-items: center;
-    background: var(--bg-page);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 2px 6px;
-  }
-  .input-with-unit input[type="number"] {
-    width: 65px;
-    border: none;
-    background: transparent;
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    text-align: right;
-    outline: none;
-    color: var(--primary);
-    font-weight: 600;
-  }
-  .input-with-unit .unit { font-size: 0.75rem; color: var(--text-muted); margin-left: 4px; font-family: var(--font-sans); font-weight: 500;}
-
-  /* Range Slider */
-  input[type="range"] {
-    -webkit-appearance: none;
-    width: 100%;
-    height: 6px;
-    background: var(--border);
-    border-radius: 3px;
-    outline: none;
-  }
-  input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--primary);
-    cursor: pointer;
-    transition: transform 0.1s;
-  }
-  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
-
-  /* Seletor de Carga */
-  .charge-selector {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-  .charge-selector button {
-    flex: 1;
-    border-radius: var(--radius-md);
-    padding: 10px;
-    font-size: 0.9rem;
-    justify-content: center;
-  }
-  .charge-selector button[data-active="true"][data-sign="1"] {
-    background: #FEF2F2; color: var(--positive); border-color: var(--positive);
-  }
-  .charge-selector button[data-active="true"][data-sign="-1"] {
-    background: #EFF6FF; color: var(--negative); border-color: var(--negative);
-  }
-
-  .switch-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-  }
-  .switch-row label { font-size: 0.85rem; color: var(--text-main); cursor: pointer; }
-  
-  .presets {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .presets button { padding: 6px 12px; font-size: 0.75rem; }
-
-  .note {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    line-height: 1.5;
-    background: var(--bg-page);
-    padding: 10px;
-    border-radius: var(--radius-md);
-    margin-top: 10px;
-  }
-
-  ::-webkit-scrollbar { width: 8px; }
-  ::-webkit-scrollbar-track { background: var(--bg-page); }
-  ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 4px; }
-
-  @media (max-width: 900px) {
-    .app-layout { flex-direction: column; }
-    
-    .simulation-area { 
-      flex: 1 1 50%; 
-      min-height: 45vh; 
-    }
-    
-    .control-panel { 
-      flex: 1 1 50%; 
-      max-width: 100%; 
-      border-left: none; 
-      border-top: 1px solid var(--border); 
-    }
-
-    header.app-header { padding: 8px 12px; }
-    .title-area h1 { font-size: 1.1rem; }
-    .title-area p { display: none; }
-    .equation { font-size: 0.85rem; padding: 4px 8px; }
-
-    .floating-dashboard { 
-      top: 8px; left: 8px; right: 8px; 
-      justify-content: space-between; 
-    }
-    .readout-card { 
-      flex: 1; padding: 4px 6px; text-align: center; 
-    }
-    .readout-card .value { font-size: 0.9rem; }
-    .readout-card .label { font-size: 0.6rem; }
-
-    .sim-controls { 
-      bottom: 12px; width: 95%; max-width: 400px; padding: 6px; 
-    }
-    .sim-controls button { 
-      flex: 1; justify-content: center; font-size: 0.75rem; padding: 8px 4px; 
-    }
-
-    .floating-legend { display: none; }
-    .navigation-hint { display: none; }
-
-    .input-with-unit input[type="number"] { font-size: 16px; width: 75px;}
-  }
+:root{--bg:#F3F4F6;--pn:#fff;--bd:#E5E7EB;--tx:#1F2937;--mu:#6B7280;--pr:#2563EB;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,Segoe UI,sans-serif;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{flex:none;background:var(--pn);border-bottom:1px solid var(--bd);padding:8px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+h1{font-size:clamp(.95rem,2.6vw,1.15rem);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eq{flex:none;font:600 clamp(.75rem,2.4vw,.95rem) var(--mono);color:var(--pr);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:4px 9px}
+main{flex:1;min-height:0;display:flex}
+#sim{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;background:#fff}
+#dash{flex:none;display:flex;gap:6px;padding:8px;overflow-x:auto;border-bottom:1px solid var(--bd);scrollbar-width:none}
+#dash::-webkit-scrollbar{display:none}
+.card{flex:0 0 auto;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:4px 9px;white-space:nowrap}
+.card b{display:block;font-size:.62rem;color:var(--mu);font-weight:600}
+.card span{font:.82rem var(--mono)}
+#stage{flex:1;min-height:0;position:relative;overflow:hidden}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#leg{position:absolute;left:8px;bottom:8px;right:8px;display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.72rem;pointer-events:none}
+#leg span{background:rgba(255,255,255,.85);border-radius:10px;padding:1px 6px}
+#leg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+#leg b{font-weight:500}
+.lt{display:none}
+#bar{flex:none;display:flex;justify-content:center;gap:6px;padding:8px;border-top:1px solid var(--bd);background:var(--pn)}
+#bar button{flex:0 1 112px}
+aside{flex:none;width:clamp(300px,32vw,400px);min-height:0;background:var(--pn);border-left:1px solid var(--bd);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.sec{padding:14px 16px;border-bottom:1px solid var(--bd)}
+h2{font-size:.85rem;color:var(--mu);margin-bottom:10px}
+button{font:600 .8rem system-ui,sans-serif;padding:7px 13px;border-radius:18px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);cursor:pointer}
+button:hover{background:var(--bd)}
+button.pri,button.on{background:var(--pr);border-color:var(--pr);color:#fff}
+.row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.fld{margin-bottom:12px}
+.fh{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.82rem;margin-bottom:5px}
+.fh div{display:flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:2px 6px;font-size:.72rem;color:var(--mu);white-space:nowrap}
+.fh input{width:84px;border:0;background:transparent;text-align:right;font:600 .82rem var(--mono);color:var(--pr);outline:0}
+input[type=range]{width:100%;accent-color:var(--pr)}
+.sw{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:.82rem;margin-bottom:9px}
+.sw input{flex:none}
+.note{font-size:.75rem;line-height:1.6;color:var(--mu);background:var(--bg);border-radius:8px;padding:9px;margin-top:8px;overflow-wrap:anywhere}
+@media(min-width:601px){.lt{display:inline}}
+@media(max-width:800px){
+  main{flex-direction:column}
+  #sim{flex:none;height:clamp(270px,46vh,520px);height:clamp(270px,46dvh,520px)}
+  aside{flex:1;width:auto;border-left:0;border-top:1px solid var(--bd)}
+  .fh input{font-size:16px}
+}
+@media(max-height:520px) and (orientation:landscape){
+  main{flex-direction:row}
+  #sim{flex:1;height:auto}
+  aside{flex:none;width:clamp(260px,40vw,340px);border-left:1px solid var(--bd);border-top:0}
+  header{padding:4px 12px}#dash,#bar{padding:5px}.card{padding:2px 7px}
+}
+@media(pointer:coarse){button{min-height:42px}input[type=range]{height:30px}.sw input{width:22px;height:22px}}
 </style>
 </head>
 <body>
-
-<header class="app-header">
-  <div class="title-area">
-    <h1><i class="bi bi-magnet-fill" style="color:var(--primary);"></i> Simulador de Lorentz</h1>
-    <p>Dinâmica 3D interativa de partículas carregadas.</p>
+<header><h1>Simulador de Lorentz 3D</h1><div class="eq">F = q(v × B)</div></header>
+<main>
+<section id="sim">
+  <div id="dash"></div>
+  <div id="stage">
+    <canvas id="scene" role="img" aria-label="Trajetória 3D da partícula carregada"></canvas>
+    <div id="leg"><span><i style="background:#F59E0B"></i>v<b class="lt"> velocidade</b></span><span><i style="background:#8B5CF6"></i>F<b class="lt"> força (∝ |v⊥|)</b></span><span><i style="background:#10B981"></i>B<b class="lt"> campo</b></span></div>
   </div>
-  <div class="equation">F = q(v × B)</div>
-</header>
-
-<div class="app-layout">
-  
-  <!-- ÁREA DO CANVAS -->
-  <section class="simulation-area" id="simArea">
-    
-    <div class="navigation-hint">
-      <i class="bi bi-mouse3"></i> Arraste para mover, Scroll para zoom
-    </div>
-
-    <!-- Leituras Flutuantes -->
-    <div class="floating-dashboard">
-      <div class="readout-card">
-        <div class="label">Raio (r)</div>
-        <div class="value" id="outR">—</div>
-      </div>
-      <div class="readout-card">
-        <div class="label">Período (T)</div>
-        <div class="value" id="outT">—</div>
-      </div>
-      <div class="readout-card">
-        <div class="label">Velocidade |v|</div>
-        <div class="value" id="outV">—</div>
-      </div>
-    </div>
-
-    <!-- Canvas Principal -->
-    <canvas id="scene" role="img" aria-label="Simulação Física"></canvas>
-
-    <!-- Legenda visual -->
-    <div class="floating-legend">
-      <div class="legend-item"><span class="dot" style="background:var(--negative)"></span> Elétron / Carga (-)</div>
-      <div class="legend-item"><span class="dot" style="background:var(--positive)"></span> Próton / Carga (+)</div>
-      <div class="legend-item"><span class="dot" style="background:var(--field)"></span> Campo Mag. (B)</div>
-      <div class="legend-item"><span class="dot" style="background:var(--force)"></span> Força Mag. (F)</div>
-      <div class="legend-item"><span class="dot" style="background:var(--velocity)"></span> Velocidade (v)</div>
-    </div>
-
-    <!-- Controles de Playback -->
-    <div class="sim-controls">
-      <button id="btnPlay" class="primary"><i class="bi bi-pause-fill"></i> Pausar</button>
-      <button id="btnReset"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
-      <button id="btnClearTrail"><i class="bi bi-eraser-fill"></i> Limpar</button>
-    </div>
-
-  </section>
-
-  <!-- PAINEL DE CONTROLE -->
-  <aside class="control-panel" id="controlPanel">
-    
-    <div class="panel-section">
-      <div class="panel-title"><i class="bi bi-collection-play"></i> Cenários Prontos</div>
-      <div class="presets" id="presetRow"></div>
-    </div>
-
-    <div class="panel-section">
-      <div class="panel-title"><i class="bi bi-lightning-charge"></i> Partícula</div>
-      <div class="charge-selector">
-        <button data-sign="1" data-active="false">Próton (+)</button>
-        <button data-sign="-1" data-active="true">Elétron (-)</button>
-      </div>
-      <div id="groupCharge"></div>
-      <div id="groupMass"></div>
-      <div class="note" id="particleCaption"></div>
-    </div>
-
-    <div class="panel-section">
-      <div class="panel-title"><i class="bi bi-magnet"></i> Ambiente Físico</div>
-      <div id="groupFieldVelocity"></div>
-    </div>
-
-    <!-- Seção Avançada (3D) -->
-    <details class="panel-section advanced-section">
-      <summary class="panel-title"><i class="bi bi-box"></i> Modo 3D (Avançado)</summary>
-      <div id="groupAdvanced"></div>
-      <div class="note">Adicionar velocidades paralelas a <b>B</b> ou inclinar o campo magnético gera o movimento helicoidal tridimensional (hélice) característico.</div>
-    </details>
-
-    <div class="panel-section">
-      <div class="panel-title"><i class="bi bi-camera-video"></i> Visualização (Câmera)</div>
-      <div class="switch-row">
-        <label for="chkAutoScale">Auto-ajustar zoom ao mudar parâmetros</label>
-        <input type="checkbox" id="chkAutoScale" checked>
-      </div>
-      <div class="switch-row">
-        <label for="chkFollow">Câmera acompanha a deriva 3D</label>
-        <input type="checkbox" id="chkFollow" checked>
-      </div>
-      <div class="switch-row">
-        <label for="chkVectors">Mostrar vetores (v, F)</label>
-        <input type="checkbox" id="chkVectors" checked>
-      </div>
-      <div class="switch-row">
-        <label for="chkTrail">Desenhar trajetória</label>
-        <input type="checkbox" id="chkTrail" checked>
-      </div>
-      <div class="switch-row">
-        <label for="chkField">Desenhar grade do Campo B</label>
-        <input type="checkbox" id="chkField" checked>
-      </div>
-      <div class="note" id="scaleNote"></div>
-    </div>
-    
-  </aside>
-
-</div>
-
+  <div id="bar"><button id="play" class="pri">Pausar</button><button id="reset">Reset</button><button id="clr">Limpar</button></div>
+</section>
+<aside>
+  <div class="sec"><h2>Cenários</h2><div class="row" id="pre"></div></div>
+  <div class="sec"><h2>Partícula</h2><div class="row" id="kinds"></div><div class="note" id="cap"></div></div>
+  <div class="sec"><h2>Campo magnético B (T)</h2><div id="gB"></div></div>
+  <div class="sec"><h2>Velocidade inicial v (m/s)</h2><div id="gV"></div></div>
+  <div class="sec"><h2>Câmera e exibição</h2>
+    <div class="row"><button id="vTop">Topo (xy)</button><button id="vSide">Lateral (xz)</button><button id="v3d">3D</button></div>
+    <div class="sw"><label for="cFollow">Câmera acompanha o centro de guia</label><input type="checkbox" id="cFollow" checked></div>
+    <div class="sw"><label for="cVec">Mostrar vetores v e F</label><input type="checkbox" id="cVec" checked></div>
+    <div class="sw"><label for="cTrail">Desenhar trajetória</label><input type="checkbox" id="cTrail" checked></div>
+    <div class="sw"><label for="cField">Desenhar linhas de campo B</label><input type="checkbox" id="cField" checked></div>
+    <div class="sw"><label for="cCmp">Modo comparativo (mesmo tempo e escala para todas as partículas)</label><input type="checkbox" id="cCmp"></div>
+    <div class="note">Arraste para girar · scroll ou pinça para zoom · dois cliques reiniciam a câmera.</div>
+    <div class="note" id="info"></div>
+  </div>
+</aside>
+</main>
 <script>
 'use strict';
+const E=1.602176634e-19,ME=9.1093837015e-31,MP=1.67262192369e-27,MA=6.6446573357e-27,C=299792458;
+const PART={e:{q:-1,m:ME,n:'Elétron'},x:{q:1,m:ME,n:'Pósitron'},p:{q:1,m:MP,n:'Próton'},a:{q:2,m:MA,n:'Partícula α'}};
+const REF_T=2*Math.PI*ME/E, REF_L=ME*1e7/E;   // elétron, 1 T, 1e7 m/s (referência do modo comparativo)
+const $=id=>document.getElementById(id);
+const add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],sc=(a,k)=>[a[0]*k,a[1]*k,a[2]*k];
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],nrm=a=>Math.hypot(a[0],a[1],a[2]);
+const cr=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const PFX=[[-15,'f'],[-12,'p'],[-9,'n'],[-6,'µ'],[-3,'m'],[0,''],[3,'k'],[6,'M'],[9,'G']];
+function fmt(v,u){
+  if(v==null||!isFinite(v))return '—'; if(v===0)return '0 '+u;
+  const a=Math.abs(v); if(a<1e-15||a>=1e12)return v.toExponential(2)+' '+u;
+  let ch=PFX[5]; for(const p of PFX) if(a>=Math.pow(10,p[0])*.999) ch=p;
+  const s=v/Math.pow(10,ch[0]); return s.toFixed(Math.abs(s)>=100?1:Math.abs(s)>=10?2:3)+' '+ch[1]+u;
+}
 
-const ELEMENTARY_CHARGE = 1.602176634e-19; 
-const ELECTRON_MASS = 9.1093837015e-31; 
-const PROTON_MASS = 1.67262192369e-27;
-const C_LIGHT = 299792458; 
+/* ---------- Física ---------- */
+// Boris (rotação pura): conserva |v|. m aqui já é a massa relativística γm.
+function boris(v,q,m,B,dt){
+  const k=q*dt/(2*m),t=sc(B,k),t2=dot(t,t);
+  const vp=add(v,cr(v,t));
+  return add(v,cr(vp,sc(t,2/(1+t2))));
+}
+function derive(v,P){
+  const sp=nrm(v),b=sp/C,g=1/Math.sqrt(1-b*b),Bm=nrm(P.B);
+  if(Bm<1e-12) return {g,sp,Bm:0};
+  const Bh=sc(P.B,1/Bm),vpar=dot(v,Bh),vperp=Math.sqrt(Math.max(0,sp*sp-vpar*vpar));
+  const w=Math.abs(P.q)*Bm/(g*P.m),T=2*Math.PI/w;
+  return {g,sp,Bm,Bh,vpar,vperp,T,w,r:g*P.m*vperp/(Math.abs(P.q)*Bm),pitch:vpar*T};
+}
 
-const Units = (() => {
-  const PREFIXES = [
-    {exp:-15,sym:'f'},{exp:-12,sym:'p'},{exp:-9,sym:'n'},{exp:-6,sym:'µ'},{exp:-3,sym:'m'},
-    {exp:0,sym:''},{exp:3,sym:'k'},{exp:6,sym:'M'},{exp:9,sym:'G'},{exp:12,sym:'T'}
-  ];
-  function format(value, unit, digits) {
-    if (value === null || value === undefined || !isFinite(value)) return '—';
-    if (value === 0) return '0 ' + unit;
-    const abs = Math.abs(value);
-    if (abs < 1e-15 || abs >= 1e15) return value.toExponential(2) + ' ' + unit;
-    let chosen = {exp:0, sym:''};
-    for (const p of PREFIXES) { if (abs >= Math.pow(10, p.exp) * 0.999) chosen = p; }
-    const scaled = value / Math.pow(10, chosen.exp);
-    const d = digits !== undefined ? digits : (Math.abs(scaled) >= 100 ? 1 : Math.abs(scaled) >= 10 ? 2 : 3);
-    return scaled.toFixed(d) + ' ' + chosen.sym + unit;
-  }
-  function niceStep(rawStep) {
-    if (!isFinite(rawStep) || rawStep <= 0) return 1;
-    const exp = Math.floor(Math.log10(rawStep));
-    const base = rawStep / Math.pow(10, exp);
-    let niceBase = base < 1.5 ? 1 : base < 3.5 ? 2 : base < 7.5 ? 5 : 10;
-    return niceBase * Math.pow(10, exp);
-  }
-  return { format, niceStep };
-})();
+/* ---------- Controles ---------- */
+const val={Bx:.5,By:0,Bz:1,vx:1e7,vy:0,vz:6e6};let kind='e';const ctl={};
+const CFG=[['gB','Bx','Bx',-2,2,.1,'T'],['gB','By','By',-2,2,.1,'T'],['gB','Bz','Bz',-2,2,.1,'T'],
+ ['gV','vx','vx',-1e8,1e8,1e6,'m/s'],['gV','vy','vy',-1e8,1e8,1e6,'m/s'],['gV','vz','vz',-1e8,1e8,1e6,'m/s']];
+CFG.forEach(([g,id,lb,mn,mx,st,u])=>{
+  const w=document.createElement('div');w.className='fld';
+  w.innerHTML=`<div class="fh"><label>${lb}</label><div><input type="number" step="any" value="${val[id]}"> ${u}</div></div><input type="range" min="${mn}" max="${mx}" step="${st}" value="${val[id]}">`;
+  $(g).appendChild(w);
+  const num=w.querySelector('input[type=number]'),rng=w.querySelector('input[type=range]');
+  const set=(v,silent)=>{v=Math.min(mx,Math.max(mn,v));val[id]=v;num.value=v;rng.value=v;if(!silent)reset();};
+  rng.oninput=()=>set(parseFloat(rng.value));
+  num.onchange=()=>set(parseFloat(num.value)||0);
+  ctl[id]=set;
+});
+Object.keys(PART).forEach(k=>{
+  const b=document.createElement('button');b.textContent=PART[k].n;b.dataset.k=k;
+  b.onclick=()=>{setKind(k);reset();};$('kinds').appendChild(b);
+});
+function setKind(k){kind=k;document.querySelectorAll('#kinds button').forEach(b=>b.className=b.dataset.k===k?'on':'');}
+const PRE=[['Elétron circular','e',0,0,1,1e7,0,0],['Próton circular','p',0,0,1,1e6,0,0],['Hélice 3D (elétron)','e',.5,0,1,1e7,0,6e6],
+ ['Hélice 3D (próton)','p',0,.6,.8,2e6,0,1e6],['Partícula α','a',0,0,1,1e6,0,5e5],['v ∥ B (reta)','e',0,0,1,0,0,1e7],['Relativístico (0,33c)','e',0,0,1,1e8,0,0]];
+PRE.forEach(p=>{
+  const b=document.createElement('button');b.textContent=p[0];
+  b.onclick=()=>{setKind(p[1]);['Bx','By','Bz','vx','vy','vz'].forEach((id,i)=>ctl[id](p[2+i],true));reset();};
+  $('pre').appendChild(b);
+});
+setKind('e');
 
-const Physics = (() => {
-  function cross(a, b) { return [ a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0] ]; }
-  function addV(a, b) { return [a[0]+b[0], a[1]+b[1], a[2]+b[2]]; }
+/* ---------- Estado ---------- */
+const cv=$('scene'),cx=cv.getContext('2d');
+let W=0,H=0,scale=1,zoom=1,yaw=-.7,pitch=.9,playing=true,lastT=null,fc=0;
+let P,x,v,gm,d,rate,tSim,gc0,sp0,trail=[];
+const FLD='#10B981',VEL='#F59E0B',FRC='#8B5CF6';
 
-  function advance(y, params, dt) {
-    const { q, m, B } = params;
-    const v = [y[3], y[4], y[5]];
-    const k = (q * dt) / (2 * m);
-    const t = [B[0]*k, B[1]*k, B[2]*k];
-    const tMagSq = t[0]*t[0] + t[1]*t[1] + t[2]*t[2];
-    const vPrime = addV(v, cross(v, t));
-    const s = [ (2*t[0])/(1+tMagSq), (2*t[1])/(1+tMagSq), (2*t[2])/(1+tMagSq) ];
-    const vNew = addV(v, cross(vPrime, s));
-    return [ y[0]+vNew[0]*dt, y[1]+vNew[1]*dt, y[2]+vNew[2]*dt, vNew[0], vNew[1], vNew[2] ];
-  }
+function params(){
+  const k=PART[kind];let v0=[val.vx,val.vy,val.vz];const s=nrm(v0);
+  if(s>.99*C)v0=sc(v0,.99*C/s);
+  return {q:k.q*E,m:k.m,sign:Math.sign(k.q),name:k.n,B:[val.Bx,val.By,val.Bz],v0};
+}
+function guide(){ // centro de guia: x + γm(v×B)/(qB²)
+  return d.Bm?add(x,sc(cr(v,P.B),gm/(P.q*d.Bm*d.Bm))):x.slice();
+}
+function fit(){
+  if(!W||!d)return;
+  let L;
+  if($('cCmp').checked)L=REF_L;
+  else if(d.Bm)L=Math.max(d.r,Math.abs(d.pitch)/10);
+  else L=d.sp*3;
+  if(!(L>0))L=1;
+  scale=.3*Math.min(W,H)/L;
+}
+function reset(){
+  P=params();x=[0,0,0];v=P.v0.slice();d=derive(v,P);gm=d.g*P.m;sp0=d.sp;tSim=0;
+  rate=$('cCmp').checked?REF_T/2:(d.Bm&&d.T?d.T/2:1/3);
+  gc0=guide();trail=[[0,0,0]];fit();readouts();info();
+}
+function readouts(){
+  const cards=[['Raio r',d.Bm?fmt(d.r,'m'):'—'],['Período T',d.Bm?fmt(d.T,'s'):'—'],['|v|',fmt(d.sp,'m/s')+' ('+(d.sp/C*100).toFixed(1)+'% c)'],
+   ['v∥ (ao longo de B)',d.Bm?fmt(d.vpar,'m/s'):'—'],['v⊥ (a B)',d.Bm?fmt(d.vperp,'m/s'):'—'],['Passo da hélice',d.Bm?fmt(d.pitch,'m'):'—'],['γ',d.g.toFixed(4)]];
+  $('dash').innerHTML=cards.map(c=>`<div class="card"><b>${c[0]}</b><span>${c[1]}</span></div>`).join('');
+  $('cap').innerHTML=`<b>${P.name}</b><br>q = ${fmt(P.q,'C')} · m = ${fmt(P.m,'kg')}<br>Modelo relativístico: massa efetiva γm = ${fmt(gm,'kg')}`;
+}
+function info(){
+  const deg=a=>(a*180/Math.PI).toFixed(1)+'°';
+  let s=`Tempo simulado: <b>${fmt(tSim,'s')}</b>`+(d.Bm?` (${(tSim/d.T).toFixed(2)} voltas)`:'')+`<br>Ritmo: 1 s real = <b>${fmt(rate,'s')}</b> simulados<br>Escala: 1 px = <b>${fmt(1/(scale*zoom),'m')}</b>`;
+  if(d.Bm){
+    const w=sub(x,gc0),wp=sub(w,sc(d.Bh,dot(w,d.Bh))),rm=nrm(wp);
+    s+=`<br>Ângulo entre v e B: <b>${deg(Math.atan2(d.vperp,d.vpar))}</b><br>Verificação numérica: erro de |v| = <b>${(Math.abs(nrm(v)-sp0)/(sp0||1)).toExponential(1)}</b>`+(d.r>0?`; raio medido/teórico = <b>${(rm/d.r).toFixed(4)}</b>`:'');
+  }else s+='<br>Sem campo: movimento retilíneo uniforme.';
+  $('info').innerHTML=s;
+}
 
-  function derivedQuantities(y, params) {
-    const { q, m, B } = params;
-    const v = [y[3], y[4], y[5]];
-    const Bmag = Math.hypot(B[0], B[1], B[2]);
-    const speed = Math.hypot(v[0], v[1], v[2]);
-    if (Bmag < 1e-30 || Math.abs(q) < 1e-30) return { r:null, T:null, w:null, speed };
-
-    const Bhat = [B[0]/Bmag, B[1]/Bmag, B[2]/Bmag];
-    const vDotBhat = v[0]*Bhat[0] + v[1]*Bhat[1] + v[2]*Bhat[2];
-    const vPerp = [v[0]-Bhat[0]*vDotBhat, v[1]-Bhat[1]*vDotBhat, v[2]-Bhat[2]*vDotBhat];
-    const vPerpMag = Math.hypot(vPerp[0], vPerp[1], vPerp[2]);
-
-    const w = Math.abs(q) * Bmag / m;
-    const T = 2 * Math.PI / w;
-    const r = m * vPerpMag / (Math.abs(q) * Bmag);
-    return { r, T, w, speed };
-  }
-  return { advance, derivedQuantities, cross };
-})();
-
-const Render = (() => {
-  let canvas, ctx, parent;
-  let W = 0, H = 0, DPR = 1;
-  
-  let camX = 0, camY = 0, baseScale = 1;
-  
-  let manualZoom = 1;
-  let manualPanX = 0; 
-  let manualPanY = 0;
-  
-  let isDragging = false;
-  let lastMouseX = 0;
-  let lastMouseY = 0;
-
-  const trailPoints = [];
-  const MAX_TRAIL = 2500;
-  
-  const COLORS = {
-    field: '#10B981', 
-    axis: 'rgba(0,0,0,0.1)',
-    grid: 'rgba(0,0,0,0.03)',
-    text: '#6B7280'
-  };
-
-  function init(canvasEl) { 
-    canvas = canvasEl; 
-    ctx = canvas.getContext('2d'); 
-    parent = canvas.parentElement;
-    window.addEventListener('resize', resize);
-    resize(); 
-    setupInteraction();
-  }
-
-  function setupInteraction() {
-    canvas.addEventListener('mousedown', (e) => {
-      isDragging = true;
-      lastMouseX = e.clientX;
-      lastMouseY = e.clientY;
-    });
-
-    window.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      const dx = e.clientX - lastMouseX;
-      const dy = e.clientY - lastMouseY;
-      lastMouseX = e.clientX;
-      lastMouseY = e.clientY;
-      
-      const totalScale = baseScale * manualZoom;
-      manualPanX -= dx / totalScale;
-      manualPanY += dy / totalScale;
-    });
-
-    window.addEventListener('mouseup', () => { isDragging = false; });
-    window.addEventListener('mouseleave', () => { isDragging = false; });
-
-    canvas.addEventListener('wheel', (e) => {
-      e.preventDefault(); 
-      const rect = canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
-
-      const oldTotalScale = baseScale * manualZoom;
-      const zoomFactor = e.deltaY < 0 ? 1.15 : (1 / 1.15);
-      
-      let newManualZoom = Math.max(0.01, Math.min(manualZoom * zoomFactor, 50));
-      const newTotalScale = baseScale * newManualZoom;
-
-      manualPanX += (mx - W/2) * (1 / oldTotalScale - 1 / newTotalScale);
-      manualPanY -= (my - H/2) * (1 / oldTotalScale - 1 / newTotalScale);
-      manualZoom = newManualZoom;
-    }, { passive: false });
-
-    canvas.addEventListener('dblclick', () => { resetView(); });
-
-    let initialPinchDistance = null;
-    let initialPinchZoom = 1;
-
-    canvas.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      if (e.touches.length === 1) {
-        isDragging = true;
-        lastMouseX = e.touches[0].clientX;
-        lastMouseY = e.touches[0].clientY;
-      } else if (e.touches.length === 2) {
-        isDragging = false;
-        initialPinchDistance = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        initialPinchZoom = manualZoom;
-      }
-    }, { passive: false });
-
-    canvas.addEventListener('touchmove', (e) => {
-      e.preventDefault(); 
-      if (e.touches.length === 1 && isDragging) {
-        const dx = e.touches[0].clientX - lastMouseX;
-        const dy = e.touches[0].clientY - lastMouseY;
-        lastMouseX = e.touches[0].clientX;
-        lastMouseY = e.touches[0].clientY;
-
-        const totalScale = baseScale * manualZoom;
-        manualPanX -= dx / totalScale;
-        manualPanY += dy / totalScale;
-      } else if (e.touches.length === 2 && initialPinchDistance) {
-        const currentDistance = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        const zoomFactor = currentDistance / initialPinchDistance;
-        let newManualZoom = Math.max(0.01, Math.min(initialPinchZoom * zoomFactor, 50));
-        manualZoom = newManualZoom;
-      }
-    }, { passive: false });
-
-    canvas.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      if (e.touches.length < 2) {
-        initialPinchDistance = null;
-      }
-      if (e.touches.length === 0) {
-        isDragging = false;
-      } else if (e.touches.length === 1) {
-        lastMouseX = e.touches[0].clientX;
-        lastMouseY = e.touches[0].clientY;
-        isDragging = true;
-      }
-    }, { passive: false });
-  }
-
-  function resize() {
-    DPR = window.devicePixelRatio || 1;
-    W = parent.clientWidth;
-    H = parent.clientHeight;
-    canvas.width = W * DPR; 
-    canvas.height = H * DPR;
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  }
-
-  function setScale(pxPerMeter) { baseScale = pxPerMeter > 0 ? pxPerMeter : 1; }
-  function setCamera(x, y) { camX = x; camY = y; }
-  function clearTrail() { trailPoints.length = 0; }
-  function resetView() { manualZoom = 1; manualPanX = 0; manualPanY = 0; }
-  function getTotalScale() { return baseScale * manualZoom; }
-  
-  function pushTrailPoint(x, y) {
-    trailPoints.push([x, y]);
-    if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
-  }
-
-  function worldToScreen(x, y) {
-    const totalScale = baseScale * manualZoom;
-    const effectiveCamX = camX + manualPanX;
-    const effectiveCamY = camY + manualPanY;
-    return [ 
-      W/2 + (x - effectiveCamX) * totalScale, 
-      H/2 - (y - effectiveCamY) * totalScale 
-    ];
-  }
-
-  function drawArrow(x1, y1, x2, y2, color, width=2) {
-    const angle = Math.atan2(y2-y1, x2-x1);
-    const headLen = 10;
-    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
-    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x2, y2);
-    ctx.lineTo(x2 - headLen*Math.cos(angle-0.4), y2 - headLen*Math.sin(angle-0.4));
-    ctx.lineTo(x2 - headLen*Math.cos(angle+0.4), y2 - headLen*Math.sin(angle+0.4));
-    ctx.closePath(); ctx.fill();
-  }
-
-  function drawFieldBackground(Bz) {
-    if (Math.abs(Bz) < 1e-9) return;
-    
-    const totalScale = baseScale * manualZoom;
-    const effectiveCamX = camX + manualPanX;
-    const effectiveCamY = camY + manualPanY;
-    
-    const stepM = Units.niceStep(80 / totalScale);
-    
-    const startWX = Math.floor((effectiveCamX - (W/2)/totalScale) / stepM) * stepM;
-    const startWY = Math.floor((effectiveCamY - (H/2)/totalScale) / stepM) * stepM;
-    const endWX = effectiveCamX + (W/2)/totalScale;
-    const endWY = effectiveCamY + (H/2)/totalScale;
-    
-    ctx.strokeStyle = COLORS.field;
-    ctx.fillStyle = COLORS.field;
-    ctx.lineWidth = 2;
-    ctx.globalAlpha = 0.4;
-    
-    for (let wy = startWY; wy <= endWY + stepM; wy += stepM) {
-      for (let wx = startWX; wx <= endWX + stepM; wx += stepM) {
-        const [x, y] = worldToScreen(wx, wy);
-        if (Bz > 0) {
-          ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2); ctx.fill();
-        } else {
-          ctx.beginPath();
-          ctx.moveTo(x-4, y-4); ctx.lineTo(x+4, y+4);
-          ctx.moveTo(x-4, y+4); ctx.lineTo(x+4, y-4);
-          ctx.stroke();
-        }
-      }
+/* ---------- Projeção 3D ortográfica (z para cima; yaw em z, pitch em x) ---------- */
+let cam=[0,0,0];
+function rot(p){
+  const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+  const xr=p[0]*cy+p[1]*sy,yr=-p[0]*sy+p[1]*cy;
+  return [xr,p[2]*cp+yr*sp];
+}
+function proj(p){const r=rot(sub(p,cam)),S=scale*zoom;return [W/2+r[0]*S,H/2-r[1]*S];}
+const Lw=()=>.3*Math.min(W,H)/(scale*zoom); // comprimento-base em metros para ~30% da tela
+function arrow(a,b,col,w,hl){
+  const dx=b[0]-a[0],dy=b[1]-a[1];
+  cx.strokeStyle=cx.fillStyle=col;cx.lineWidth=w;cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.stroke();
+  if(Math.hypot(dx,dy)<hl*.8)return;
+  const an=Math.atan2(dy,dx);cx.beginPath();cx.moveTo(b[0],b[1]);
+  cx.lineTo(b[0]-hl*Math.cos(an-.4),b[1]-hl*Math.sin(an-.4));cx.lineTo(b[0]-hl*Math.cos(an+.4),b[1]-hl*Math.sin(an+.4));cx.closePath();cx.fill();
+}
+function drawField(g){
+  if(!d.Bm)return;
+  const Bh=d.Bh,l=Lw(),a=Math.abs(Bh[0])<.9?[1,0,0]:[0,1,0];
+  let e1=cr(Bh,a);e1=sc(e1,1/nrm(e1));const e2=cr(Bh,e1),s0=dot(g,Bh),st=l*.9;
+  cx.globalAlpha=.4;
+  for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){
+    const base=add(g,add(sc(e1,i*1.6*l),sc(e2,j*1.6*l)));
+    for(let k=Math.ceil((s0-4*l)/st);k<=Math.floor((s0+4*l)/st);k++){
+      const p=add(base,sc(Bh,k*st-s0));arrow(proj(p),proj(add(p,sc(Bh,.5*l))),FLD,1.5,7);
     }
-    ctx.globalAlpha = 1.0;
   }
-
-  function drawInPlaneFieldArrow(Bx, By) {
-    const mag = Math.hypot(Bx, By);
-    if (mag < 1e-9) return;
-    
-    const cx = 50, cy = H - 50, sc = 30; 
-    const dx = (Bx/mag) * Math.min(sc, sc*mag/1.5);
-    const dy = -(By/mag) * Math.min(sc, sc*mag/1.5); 
-    
-    drawArrow(cx, cy, cx+dx, cy+dy, COLORS.field, 3);
-    ctx.fillStyle = COLORS.field;
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('B∥ (Plano xy)', cx+dx+8, cy+dy+4);
+  cx.globalAlpha=1;
+}
+function draw(){
+  const g=guide();cam=$('cFollow').checked?g:[0,0,0];
+  cx.fillStyle='#fff';cx.fillRect(0,0,W,H);
+  if($('cField').checked)drawField(g);
+  const col=P.sign>0?'#EF4444':'#3B82F6';
+  if($('cTrail').checked&&trail.length>1){
+    cx.strokeStyle=col;cx.globalAlpha=.6;cx.lineWidth=2;cx.beginPath();
+    trail.forEach((p,i)=>{const s=proj(p);i?cx.lineTo(s[0],s[1]):cx.moveTo(s[0],s[1]);});cx.stroke();cx.globalAlpha=1;
   }
-
-  function frame(state, opts) {
-    setCamera(opts.camera.x, opts.camera.y);
-
-    ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#FFFFFF'; 
-    ctx.fillRect(0, 0, W, H);
-
-    ctx.strokeStyle = COLORS.grid; ctx.lineWidth = 1;
-    for(let i=0; i<W; i+=50) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,H); ctx.stroke(); }
-    for(let i=0; i<H; i+=50) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(W,i); ctx.stroke(); }
-
-    const [origX, origY] = worldToScreen(0,0);
-    ctx.strokeStyle = COLORS.axis; ctx.lineWidth = 1.5;
-    if(origX >= 0 && origX <= W) { ctx.beginPath(); ctx.moveTo(origX,0); ctx.lineTo(origX,H); ctx.stroke(); }
-    if(origY >= 0 && origY <= H) { ctx.beginPath(); ctx.moveTo(0,origY); ctx.lineTo(W,origY); ctx.stroke(); }
-
-    if (opts.showField) {
-      drawFieldBackground(opts.Bz);
-      drawInPlaneFieldArrow(opts.Bx, opts.By);
+  const pp=proj(x);
+  if($('cVec').checked&&d.sp>0){
+    const l=.9*Lw();
+    arrow(pp,proj(add(x,sc(v,l/d.sp))),VEL,3,10);                         // v: direção real, projetada
+    if(d.Bm&&d.vperp>1e-9*d.sp){                                          // F: comprimento ∝ |F| = |q|v⊥B
+      const F=sc(cr(v,P.B),P.q),Fm=Math.abs(P.q)*d.sp*d.Bm;
+      arrow(pp,proj(add(x,sc(F,l/Fm))),FRC,3,10);
     }
-
-    const [px, py] = worldToScreen(state.y[0], state.y[1]);
-    
-    const cssStyle = getComputedStyle(document.body);
-    const colorParticle = opts.sign > 0 ? cssStyle.getPropertyValue('--positive').trim() : cssStyle.getPropertyValue('--negative').trim();
-    const colorForce = cssStyle.getPropertyValue('--force').trim();
-    const colorVel = cssStyle.getPropertyValue('--velocity').trim();
-
-    if (opts.showTrail && trailPoints.length > 1) {
-      ctx.strokeStyle = colorParticle;
-      ctx.lineWidth = 2.5; 
-      ctx.globalAlpha = 0.5;
-      ctx.beginPath();
-      const [sx0, sy0] = worldToScreen(trailPoints[0][0], trailPoints[0][1]);
-      ctx.moveTo(sx0, sy0);
-      for (let i = 1; i < trailPoints.length; i++) {
-        const [sx, sy] = worldToScreen(trailPoints[i][0], trailPoints[i][1]);
-        ctx.lineTo(sx, sy);
-      }
-      ctx.stroke();
-      ctx.globalAlpha = 1.0;
-    }
-
-    if (opts.showVectors) {
-      const v = [state.y[3], state.y[4]];
-      const vMag = Math.hypot(v[0], v[1]);
-      if (vMag > 1e-9) {
-        drawArrow(px, py, px+(v[0]/vMag)*60, py-(v[1]/vMag)*60, colorVel, 3);
-      }
-      const F = opts.F;
-      const fMag = Math.hypot(F[0], F[1]);
-      if (fMag > 1e-30) {
-        drawArrow(px, py, px+(F[0]/fMag)*70, py-(F[1]/fMag)*70, colorForce, 3);
-      }
-    }
-
-    ctx.beginPath();
-    ctx.fillStyle = colorParticle;
-    ctx.arc(px, py, 9, 0, Math.PI*2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.arc(px - 3, py - 3, 3, 0, Math.PI*2);
-    ctx.fill();
-    
-    ctx.fillStyle = '#FFF';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(opts.sign > 0 ? '+' : '-', px, py);
   }
-
-  return { init, resize, frame, clearTrail, pushTrailPoint, setScale, getTotalScale, resetView, getSize: () => ({W, H}) };
-})();
-
-const UI = (() => {
-  const values = {};
-  const controls = {};
-  let chargeSign = -1;
-  const listeners = [];
-
-  const PARAMS = {
-    charge: [ { id:'qAbs', label:'Multiplicador Carga (× e)', min:1, max:5, step:1, def:1, unit:'' } ],
-    field: [
-      { id:'Bz', label:'Campo Bz', min:-2, max:2, step:0.1, def:1.0, unit:'T' },
-      { id:'vx', label:'Velocidade Inicial (vx)', min:-5e7, max:5e7, step:1e6, def:1e7, unit:'m/s' },
-      { id:'vy', label:'Velocidade Inicial (vy)', min:-5e7, max:5e7, step:1e6, def:0, unit:'m/s' }
-    ],
-    advanced: [
-      { id:'vz', label:'Velocidade no eixo z (vz)', min:-5e7, max:5e7, step:1e6, def:0, unit:'m/s' },
-      { id:'Bx', label:'Campo Bx', min:-2, max:2, step:0.1, def:0, unit:'T' },
-      { id:'By', label:'Campo By', min:-2, max:2, step:0.1, def:0, unit:'T' }
-    ]
-  };
-
-  const PRESETS = [
-    { label:'Elétron B=1T', sign:-1, qAbs:1, Bz:1, Bx:0, By:0, vx:1e7, vy:0, vz:0 },
-    { label:'Próton B=1T', sign:1, qAbs:1, Bz:1, Bx:0, By:0, vx:1e6, vy:0, vz:0 },
-    { label:'Hélice 3D', sign:-1, qAbs:1, Bz:1, Bx:0.5, By:0, vx:1e7, vy:0, vz:6e6 }
-  ];
-
-  function buildControl(cfg, container) {
-    values[cfg.id] = cfg.def;
-    const wrap = document.createElement('div');
-    wrap.className = 'field';
-    wrap.innerHTML = `
-      <div class="field-header">
-        <label>${cfg.label}</label>
-        <div class="input-with-unit">
-          <input type="number" id="num_${cfg.id}" value="${cfg.def}" step="any">
-          <span class="unit">${cfg.unit}</span>
-        </div>
-      </div>
-      <input type="range" id="rng_${cfg.id}" min="${cfg.min}" max="${cfg.max}" step="${cfg.step}" value="${cfg.def}">
-    `;
-    container.appendChild(wrap);
-
-    const rng = wrap.querySelector(`#rng_${cfg.id}`);
-    const num = wrap.querySelector(`#num_${cfg.id}`);
-
-    const setVal = (v, silent = false) => {
-      v = Math.min(cfg.max, Math.max(cfg.min, v));
-      values[cfg.id] = v;
-      rng.value = v; num.value = v;
-      if (!silent) emitChange();
-    };
-
-    rng.addEventListener('input', () => setVal(parseFloat(rng.value)));
-    num.addEventListener('change', () => setVal(parseFloat(num.value) || 0));
-    controls[cfg.id] = { setVal };
-  }
-
-  function emitChange() { listeners.forEach(fn => fn()); }
-  
-  function setSign(sign, silent = false) {
-    chargeSign = sign;
-    document.querySelectorAll('.charge-selector button').forEach(b => {
-      b.dataset.active = (parseInt(b.dataset.sign,10) === chargeSign) ? 'true' : 'false';
-    });
-    if (!silent) emitChange();
-  }
-
-  function applyPreset(p) {
-    setSign(p.sign, true);
-    Object.keys(p).forEach(k => { if (controls[k]) controls[k].setVal(p[k], true); });
-    emitChange();
-  }
-
-  function init() {
-    PARAMS.charge.forEach(c => buildControl(c, document.getElementById('groupCharge')));
-    PARAMS.field.forEach(c => buildControl(c, document.getElementById('groupFieldVelocity')));
-    PARAMS.advanced.forEach(c => buildControl(c, document.getElementById('groupAdvanced')));
-
-    document.querySelectorAll('.charge-selector button').forEach(btn => {
-      btn.addEventListener('click', () => setSign(parseInt(btn.dataset.sign, 10)));
-    });
-
-    const presetRow = document.getElementById('presetRow');
-    PRESETS.forEach(p => {
-      const b = document.createElement('button');
-      b.textContent = p.label;
-      b.addEventListener('click', () => applyPreset(p));
-      presetRow.appendChild(b);
-    });
-  }
-
-  return { 
-    init, 
-    onChange: (fn) => listeners.push(fn),
-    getParams: () => ({
-      sign: chargeSign,
-      q: chargeSign * values.qAbs * ELEMENTARY_CHARGE,
-      m: chargeSign > 0 ? PROTON_MASS : ELECTRON_MASS,
-      v0: [values.vx, values.vy, values.vz],
-      B: [values.Bx, values.By, values.Bz]
-    }),
-    flags: () => ({
-      autoScale: document.getElementById('chkAutoScale').checked,
-      showVectors: document.getElementById('chkVectors').checked,
-      showTrail: document.getElementById('chkTrail').checked,
-      showField: document.getElementById('chkField').checked,
-      showFollow: document.getElementById('chkFollow').checked
-    })
-  };
-})();
-
-(function Main() {
-  Render.init(document.getElementById('scene'));
-  UI.init();
-
-  let state = null, simTime = 0, autoPace = 1, substepDt = 1e-3, playing = true, lastT = null, dq0 = null;
-  let driftXY = [0, 0];
-  const PACE_S_PER_REV = 2; 
-  
-  function resetState() {
-    const p = UI.getParams();
-    dq0 = Physics.derivedQuantities([0,0,0, p.v0[0], p.v0[1], p.v0[2]], {q:p.q, m:p.m, B:p.B});
-    
-    const Bmag = Math.hypot(p.B[0], p.B[1], p.B[2]);
-    if (Bmag > 1e-30) {
-      const Bhat = [p.B[0]/Bmag, p.B[1]/Bmag, p.B[2]/Bmag];
-      const vPar = p.v0[0]*Bhat[0] + p.v0[1]*Bhat[1] + p.v0[2]*Bhat[2];
-      driftXY = [Bhat[0]*vPar, Bhat[1]*vPar];
-    } else {
-      driftXY = [p.v0[0], p.v0[1]]; 
-    }
-
-    if (UI.flags().autoScale) {
-      let L = dq0.r && dq0.r > 0 ? dq0.r : Math.max(dq0.speed, 1e-9);
-      const { W, H } = Render.getSize();
-      const targetPx = Math.min(W, H) * 0.35; 
-      Render.setScale(targetPx / L);
-      Render.resetView();
-    }
-
-    if (dq0.T) {
-      autoPace = dq0.T / PACE_S_PER_REV;
-      substepDt = dq0.T / 50; 
-    } else {
-      autoPace = 1 / 3; 
-      substepDt = 1 / 200;
-    }
-
-    state = { y: [0, 0, 0, p.v0[0], p.v0[1], p.v0[2]] };
-    simTime = 0;
-    Render.clearTrail();
-    Render.pushTrailPoint(0,0);
-    
-    updateFixedReadouts();
-  }
-
-  function updateFixedReadouts() {
-    const p = UI.getParams();
-    const dq = Physics.derivedQuantities(state.y, {q:p.q, m:p.m, B:p.B});
-    
-    document.getElementById('outR').innerHTML = dq.r ? `${Units.format(dq.r, 'm')}` : '—';
-    document.getElementById('outT').innerHTML = dq.T ? `${Units.format(dq.T, 's')}` : '—';
-    document.getElementById('outV').innerHTML = `${Units.format(dq.speed, 'm/s')} <span class="unit">(${((dq.speed/C_LIGHT)*100).toFixed(1)}% c)</span>`;
-    
-    document.getElementById('particleCaption').innerHTML = `
-      <strong>Dados da Partícula:</strong><br>
-      Carga (q): ${Units.format(p.q, 'C')}<br>
-      Massa (m): ${Units.format(p.m, 'kg')}
-    `;
-  }
-
-  function updateDynamicInfo() {
-    const totalScale = Render.getTotalScale();
-    const pxScaleText = `Escala Adaptativa: <b>1 px = ${Units.format(1 / totalScale, 'm')}</b>`;
-    
-    document.getElementById('scaleNote').innerHTML = dq0.T ? 
-      `Tempo Real de 1 volta: <b>${Units.format(dq0.T,'s')}</b>. <br>${pxScaleText}` : 
-      `Movimento retilíneo uniforme. <br>${pxScaleText}`;
-  }
-
-  function step(elapsedReal) {
-    if (!playing) return;
-    const dtReal = Math.min(elapsedReal, 0.05); 
-    const timeToRun = dtReal * autoPace;
-    const substeps = Math.ceil(timeToRun / substepDt);
-    const dt = timeToRun / substeps;
-    
-    const p = UI.getParams();
-    for(let i=0; i<substeps; i++) {
-      state.y = Physics.advance(state.y, {q:p.q, m:p.m, B:p.B}, dt);
-    }
-    simTime += timeToRun;
-    
-    if (UI.flags().showTrail) Render.pushTrailPoint(state.y[0], state.y[1]);
-  }
-
-  function loop(t) {
-    if (!lastT) lastT = t;
-    step((t - lastT) / 1000);
-    lastT = t;
-
-    const p = UI.getParams();
-    const F = Physics.cross([state.y[3], state.y[4], state.y[5]], p.B).map(c => c * p.q);
-    const flags = UI.flags();
-    
-    updateDynamicInfo(); 
-    
-    Render.frame(state, {
-      ...flags,
-      camera: flags.showFollow ? {x: driftXY[0] * simTime, y: driftXY[1] * simTime} : {x:0, y:0},
-      sign: p.sign, 
-      Bx: p.B[0], 
-      By: p.B[1], 
-      Bz: p.B[2], 
-      F: F
-    });
-    
-    requestAnimationFrame(loop);
-  }
-
-  UI.onChange(resetState);
-  document.getElementById('btnPlay').addEventListener('click', (e) => {
-    playing = !playing;
-    e.currentTarget.innerHTML = playing ? '<i class="bi bi-pause-fill"></i> Pausar' : '<i class="bi bi-play-fill"></i> Retomar';
-    e.currentTarget.className = playing ? 'primary' : '';
+  cx.beginPath();cx.fillStyle=col;cx.arc(pp[0],pp[1],8,0,7);cx.fill();
+  cx.fillStyle='#fff';cx.font='bold 12px sans-serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(P.sign>0?'+':'−',pp[0],pp[1]);
+  // gizmo dos eixos
+  const o=[W-46,46];cx.font='11px sans-serif';
+  [['x',[1,0,0],'#6B7280'],['y',[0,1,0],'#6B7280'],['z',[0,0,1],'#6B7280'],['B',d.Bm?d.Bh:null,FLD]].forEach(([n,u,c])=>{
+    if(!u)return;const r=rot(u);arrow(o,[o[0]+r[0]*30,o[1]-r[1]*30],c,n==='B'?3:1.5,7);
+    cx.fillStyle=c;cx.fillText(n,o[0]+r[0]*40,o[1]-r[1]*40);
   });
-  document.getElementById('btnReset').addEventListener('click', resetState);
-  document.getElementById('btnClearTrail').addEventListener('click', Render.clearTrail);
+}
 
-  resetState();
-  requestAnimationFrame(loop);
-})();
+/* ---------- Loop ---------- */
+function step(el){
+  if(!playing)return;
+  const run=Math.min(el,.05)*rate;
+  const n=d.Bm&&d.T?Math.min(300,Math.max(1,Math.ceil(run/(d.T/200)))):1,dt=run/n;
+  for(let i=0;i<n;i++){const va=v;v=boris(v,P.q,gm,P.B,dt);x=add(x,sc(add(va,v),dt/2));}
+  tSim+=run;
+  if($('cTrail').checked){trail.push(x.slice());if(trail.length>3000)trail.shift();}
+}
+function loop(t){
+  if(lastT==null)lastT=t;step((t-lastT)/1000);lastT=t;
+  draw();if(++fc%12===0)info();requestAnimationFrame(loop);
+}
+function resize(){
+  const D=window.devicePixelRatio||1,p=cv.parentElement;W=p.clientWidth;H=p.clientHeight;
+  cv.width=W*D;cv.height=H*D;cx.setTransform(D,0,0,D,0,0);fit();
+}
+window.addEventListener('resize',resize);
+if(window.ResizeObserver)new ResizeObserver(resize).observe(cv.parentElement);
+
+/* ---------- Interação ---------- */
+const pts=new Map(),pdist=()=>{if(pts.size<2)return 0;const a=[...pts.values()];return Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);};
+const cz=z=>Math.max(.02,Math.min(z,60));let pd=0;
+cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);pd=pdist();};
+cv.onpointermove=e=>{
+  if(!pts.has(e.pointerId))return;const o=pts.get(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);
+  if(pts.size===1){yaw+=(e.clientX-o[0])*.008;pitch=Math.max(-Math.PI/2,Math.min(Math.PI/2,pitch+(e.clientY-o[1])*.008));}
+  else if(pts.size===2){const n=pdist();if(pd)zoom=cz(zoom*n/pd);pd=n;}
+};
+cv.onpointerup=cv.onpointercancel=e=>{pts.delete(e.pointerId);pd=pdist();};
+cv.addEventListener('wheel',e=>{e.preventDefault();zoom=cz(zoom*(e.deltaY<0?1.15:1/1.15));},{passive:false});
+const view=(y,p)=>{yaw=y;pitch=p;zoom=1;};
+cv.ondblclick=()=>view(-.7,.9);
+$('vTop').onclick=()=>view(0,Math.PI/2);$('vSide').onclick=()=>view(0,0);$('v3d').onclick=()=>view(-.7,.9);
+$('play').onclick=e=>{playing=!playing;e.currentTarget.textContent=playing?'Pausar':'Retomar';e.currentTarget.className=playing?'pri':'';};
+$('reset').onclick=reset;$('clr').onclick=()=>{trail=[x.slice()];};
+$('cCmp').onchange=reset;
+
+setKind('e');resize();reset();requestAnimationFrame(loop);
 </script>
 </body>
 </html>
