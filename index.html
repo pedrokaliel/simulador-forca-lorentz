@@ -952,10 +952,11 @@
         x = add(x, sc(add(va, v), dt / 2));
       }
       tSim += run;
-      if ($('cTrail').checked) {
-        trail.push(x.slice());
-        if (trail.length > 3000) trail.shift();
-      }
+      
+      // O rastro agora é guardado em memória independentemente da opção 
+      // visual estar ativada. Isso previne pulos abruptos ao religar a opção.
+      trail.push(x.slice());
+      if (trail.length > 3000) trail.shift();
     }
     
     function loop(t) {
