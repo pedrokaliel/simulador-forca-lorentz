@@ -3,16 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Simulador Interativo — Força de Lorentz</title>
+<title>Laboratório Virtual de Eletromagnetismo</title>
 <!-- Fontes -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <!-- Bootstrap Icons -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
   :root {
-    /* Paleta Pedagógica Padrão */
     --bg-page: #F3F4F6;
     --bg-panel: #FFFFFF;
     --border: #E5E7EB;
@@ -29,17 +28,17 @@
     --positive: #EF4444; 
     --negative: #3B82F6; 
     --field: #10B981;    
-    --force: #8B5CF6;    
+    --force-mag: #8B5CF6; 
+    --force-elec: #EC4899;   
     --velocity: #F59E0B; 
+    --current: #DC2626;
     
     --font-sans: 'Inter', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, monospace;
     
-    --radius-lg: 12px;
     --radius-md: 8px;
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-float: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-float: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -48,98 +47,105 @@
     background-color: var(--bg-page);
     color: var(--text-main);
     font-family: var(--font-sans);
-    height: 100dvh; /* 100dvh adapta-se dinamicamente às barras de navegação mobile */
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
   }
 
-  /* Header */
+  /* --- HEADER E TABS --- */
   header.app-header {
     background: var(--bg-panel);
     border-bottom: 1px solid var(--border);
-    padding: 12px 24px;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: var(--shadow-sm);
+    flex-direction: column;
     z-index: 10;
   }
   
-  .title-area h1 { font-size: 1.25rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
-  .title-area p { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
-  
-  .equation {
-    background: var(--bg-page);
-    padding: 6px 12px;
-    border-radius: var(--radius-md);
-    font-family: var(--font-mono);
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--primary);
-    border: 1px solid var(--border);
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px;
   }
 
-  /* Layout Principal */
+  .title-area h1 { font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .title-area p { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+
+  .tab-bar {
+    display: flex;
+    padding: 0 24px;
+    gap: 16px;
+    background: #FAFAFA;
+    border-top: 1px solid var(--border);
+  }
+
+  .tab-btn {
+    background: transparent;
+    border: none;
+    padding: 12px 4px;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab-btn:hover { color: var(--primary); }
+  .tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+
+  /* --- LAYOUT --- */
   .app-layout {
     display: flex;
     flex: 1;
     overflow: hidden;
   }
 
-  /* Área de Simulação (Canvas) */
+  /* ÁREA DE SIMULAÇÃO ROBUSTA */
   .simulation-area {
     flex: 1;
     position: relative;
     background: #FFFFFF;
-    display: flex;
-    flex-direction: column;
+    min-height: 0; /* Previne colapso flexbox */
+    min-width: 0;
   }
 
   canvas#scene {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     display: block;
     cursor: grab;
-    touch-action: none; /* Crucial para o pan/zoom via touch */
+    touch-action: none;
+    z-index: 1;
   }
-  canvas#scene:active {
-    cursor: grabbing;
-  }
+  canvas#scene:active { cursor: grabbing; }
 
-  /* Dica de Navegação */
-  .navigation-hint {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-muted);
-    background: rgba(255, 255, 255, 0.85);
-    padding: 6px 10px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    z-index: 5;
-  }
-
-  /* Dashboard flutuante (Leituras) */
-  .floating-dashboard {
+  /* Elementos Flutuantes Canvas */
+  .hud-overlay {
     position: absolute;
     top: 16px;
     left: 16px;
+    right: 16px;
     display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+    justify-content: space-between;
     pointer-events: none;
     z-index: 5;
   }
 
+  .hud-panel {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
   .readout-card {
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(4px);
     border: 1px solid var(--border);
     padding: 8px 12px;
@@ -147,12 +153,29 @@
     box-shadow: var(--shadow-sm);
     pointer-events: auto;
   }
-
-  .readout-card .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; }
-  .readout-card .value { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 500; color: var(--text-main); margin-top: 2px; }
+  .readout-card.highlight { border-color: var(--primary); background: #F8FAFC; }
+  .readout-card .label { font-size: 0.7rem; text-transform: uppercase; font-weight: 600; color: var(--text-muted); }
+  .readout-card .value { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin-top: 2px; }
   .readout-card .unit { font-size: 0.8rem; color: var(--text-dim); }
 
-  /* Controles Flutuantes da Simulação */
+  .floating-legend {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    font-size: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-weight: 500;}
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
   .sim-controls {
     position: absolute;
     bottom: 24px;
@@ -168,7 +191,7 @@
     z-index: 5;
   }
 
-  button {
+  button.action-btn {
     font-family: var(--font-sans);
     font-weight: 600;
     font-size: 0.85rem;
@@ -183,29 +206,11 @@
     align-items: center;
     gap: 6px;
   }
-  button:hover { background: var(--border); }
-  button.primary { background: var(--primary); color: white; border-color: var(--primary); }
-  button.primary:hover { background: var(--primary-hover); }
+  button.action-btn:hover { background: var(--border); }
+  button.action-btn.primary { background: var(--primary); color: white; border-color: var(--primary); }
+  button.action-btn.primary:hover { background: var(--primary-hover); }
 
-  /* Legenda Flutuante */
-  .floating-legend {
-    position: absolute;
-    bottom: 16px;
-    right: 16px;
-    background: rgba(255, 255, 255, 0.85);
-    padding: 10px 14px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    font-size: 0.75rem;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    pointer-events: none;
-  }
-  .legend-item { display: flex; align-items: center; gap: 6px; font-weight: 500;}
-  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-
-  /* Painel de Controle Lateral */
+  /* --- PAINEL DE CONTROLE LATERAL --- */
   .control-panel {
     width: 100%;
     max-width: 400px;
@@ -215,300 +220,183 @@
     flex-direction: column;
     overflow-y: auto;
     box-shadow: -2px 0 10px rgba(0,0,0,0.02);
+    z-index: 10;
   }
+  .control-view { display: none; flex-direction: column; }
+  .control-view.active { display: flex; }
 
-  .panel-section {
-    padding: 20px;
-    border-bottom: 1px solid var(--border);
-  }
-  .panel-title {
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    font-weight: 700;
-    color: var(--text-muted);
-    letter-spacing: 0.05em;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+  .panel-section { padding: 20px; border-bottom: 1px solid var(--border); }
+  .panel-title { font-size: 0.85rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
   .panel-title i { font-size: 1.1rem; color: var(--primary); }
 
-  /* Accordion 3D (Details) */
-  details.advanced-section summary {
-    cursor: pointer;
-    list-style: none;
-    margin-bottom: 0;
-  }
-  details.advanced-section summary::-webkit-details-marker { display: none; }
-  details.advanced-section summary::after {
-    content: '\F282'; 
-    font-family: 'bootstrap-icons';
-    margin-left: auto;
-    font-size: 1rem;
-    transition: transform 0.2s;
-    color: var(--text-dim);
-  }
-  details.advanced-section[open] summary { margin-bottom: 16px; }
-  details.advanced-section[open] summary::after { transform: rotate(180deg); }
-
-  /* Controles de Input */
   .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-  .field:last-child { margin-bottom: 0; }
   .field-header { display: flex; justify-content: space-between; align-items: center; }
-  .field-header label { font-size: 0.85rem; font-weight: 500; color: var(--text-main); }
+  .field-header label { font-size: 0.85rem; font-weight: 500; }
   
   .input-with-unit {
-    display: flex;
-    align-items: center;
-    background: var(--bg-page);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 2px 6px;
+    display: flex; align-items: center; background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px;
   }
-  .input-with-unit input[type="number"] {
-    width: 65px;
-    border: none;
-    background: transparent;
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    text-align: right;
-    outline: none;
-    color: var(--primary);
-    font-weight: 600;
+  .input-with-unit input[type="number"], .input-with-unit select {
+    width: 70px; border: none; background: transparent; font-family: var(--font-mono); font-size: 0.85rem; text-align: right; outline: none; color: var(--primary); font-weight: 600;
   }
-  .input-with-unit .unit { font-size: 0.75rem; color: var(--text-muted); margin-left: 4px; font-family: var(--font-sans); font-weight: 500;}
+  .input-with-unit select { width: 120px; text-align: left; font-family: var(--font-sans); }
+  .input-with-unit .unit { font-size: 0.75rem; color: var(--text-muted); margin-left: 4px; }
 
-  /* Range Slider */
   input[type="range"] {
-    -webkit-appearance: none;
-    width: 100%;
-    height: 6px;
-    background: var(--border);
-    border-radius: 3px;
-    outline: none;
+    -webkit-appearance: none; width: 100%; height: 6px; background: var(--border); border-radius: 3px; outline: none;
   }
   input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--primary);
-    cursor: pointer;
-    transition: transform 0.1s;
+    -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; transition: transform 0.1s;
   }
   input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
-  /* Seletor de Carga */
-  .charge-selector {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-  .charge-selector button {
-    flex: 1;
-    border-radius: var(--radius-md);
-    padding: 10px;
-    font-size: 0.9rem;
-    justify-content: center;
-  }
-  .charge-selector button[data-active="true"][data-sign="1"] {
-    background: #FEF2F2; color: var(--positive); border-color: var(--positive);
-  }
-  .charge-selector button[data-active="true"][data-sign="-1"] {
-    background: #EFF6FF; color: var(--negative); border-color: var(--negative);
-  }
+  .toggle-group { display: flex; gap: 8px; margin-bottom: 16px; }
+  .toggle-group button { flex: 1; border-radius: var(--radius-md); padding: 8px; font-size: 0.85rem; border: 1px solid var(--border); background: var(--bg-page); cursor:pointer; font-weight:600;}
+  .toggle-group button.active { background: #EFF6FF; color: var(--primary); border-color: var(--primary); }
 
-  .switch-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-  }
-  .switch-row label { font-size: 0.85rem; color: var(--text-main); cursor: pointer; }
-  
-  .presets {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .presets button { padding: 6px 12px; font-size: 0.75rem; }
+  .switch-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .switch-row label { font-size: 0.85rem; cursor: pointer; }
 
-  .note {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    line-height: 1.5;
-    background: var(--bg-page);
-    padding: 10px;
-    border-radius: var(--radius-md);
-    margin-top: 10px;
-  }
+  .note { font-size: 0.75rem; color: var(--text-muted); line-height: 1.5; background: var(--bg-page); padding: 10px; border-radius: var(--radius-md); margin-top: 10px; }
 
   ::-webkit-scrollbar { width: 8px; }
   ::-webkit-scrollbar-track { background: var(--bg-page); }
   ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 4px; }
 
-
-  /* =========================================================
-     🔥 RESPONSIVIDADE PARA MOBILE 🔥
-     ========================================================= */
+  /* Mobile Adaptações */
   @media (max-width: 900px) {
     .app-layout { flex-direction: column; }
-    
-    /* Divide a tela 50/50 em modo portrait */
-    .simulation-area { 
-      flex: 1 1 50%; 
-      min-height: 45vh; 
-    }
-    
-    .control-panel { 
-      flex: 1 1 50%; 
-      max-width: 100%; 
-      border-left: none; 
-      border-top: 1px solid var(--border); 
-    }
-
-    /* Header Compacto */
-    header.app-header { padding: 8px 12px; }
-    .title-area h1 { font-size: 1.1rem; }
-    .title-area p { display: none; } /* Esconde o subtítulo para ganhar espaço */
-    .equation { font-size: 0.85rem; padding: 4px 8px; }
-
-    /* Leituras (Dashboard) Otimizadas */
-    .floating-dashboard { 
-      top: 8px; left: 8px; right: 8px; 
-      justify-content: space-between; 
-    }
-    .readout-card { 
-      flex: 1; padding: 4px 6px; text-align: center; 
-    }
-    .readout-card .value { font-size: 0.9rem; }
-    .readout-card .label { font-size: 0.6rem; }
-
-    /* Botões Flutuantes Compactos */
-    .sim-controls { 
-      bottom: 12px; width: 95%; max-width: 400px; padding: 6px; 
-    }
-    .sim-controls button { 
-      flex: 1; justify-content: center; font-size: 0.75rem; padding: 8px 4px; 
-    }
-
-    /* Esconde elementos não essenciais */
+    .simulation-area { flex: 1 1 45%; min-height: 40vh; }
+    .control-panel { flex: 1 1 55%; max-width: 100%; border-left: none; border-top: 1px solid var(--border); }
+    .top-bar { padding: 8px 12px; }
+    .tab-bar { padding: 0 12px; }
     .floating-legend { display: none; }
-    .navigation-hint { display: none; }
-
-    /* Impede zoom automático do iOS ao focar em inputs numéricos */
-    .input-with-unit input[type="number"] { font-size: 16px; width: 75px;}
+    .hud-panel { justify-content: space-between; width: 100%; }
+    .readout-card { flex: 1; text-align: center; padding: 4px; }
+    .sim-controls { bottom: 8px; width: 95%; }
   }
 </style>
 </head>
 <body>
 
 <header class="app-header">
-  <div class="title-area">
-    <h1><i class="bi bi-magnet-fill" style="color:var(--primary);"></i> Simulador de Lorentz</h1>
-    <p>Dinâmica 3D interativa de partículas carregadas.</p>
+  <div class="top-bar">
+    <div class="title-area">
+      <h1><i class="bi bi-magnet-fill" style="color:var(--primary);"></i> Lab Eletromagnetismo</h1>
+      <p id="appSubtitle">Dinâmica Interativa em Nível Microscópico e Macroscópico.</p>
+    </div>
   </div>
-  <div class="equation">F = q(v × B)</div>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="lorentz">Força de Lorentz</button>
+    <button class="tab-btn" data-tab="hall">Efeito Hall</button>
+  </div>
 </header>
 
 <div class="app-layout">
   
   <!-- ÁREA DO CANVAS -->
-  <section class="simulation-area" id="simArea">
+  <section class="simulation-area" id="simContainer">
     
-    <div class="navigation-hint">
-      <i class="bi bi-mouse3"></i> Arraste para mover, Scroll para zoom
+    <div class="hud-overlay">
+      <!-- HUD Lorentz -->
+      <div class="hud-panel" id="hudLorentz">
+        <div class="readout-card"><div class="label">Raio (r)</div><div class="value" id="outR">—</div></div>
+        <div class="readout-card"><div class="label">Período (T)</div><div class="value" id="outT">—</div></div>
+        <div class="readout-card"><div class="label">Velocidade |v|</div><div class="value" id="outV">—</div></div>
+      </div>
+      <!-- HUD Hall -->
+      <div class="hud-panel" id="hudHall" style="display: none;">
+        <div class="readout-card highlight">
+          <div class="label">Tensão de Hall (Vh)</div>
+          <div class="value" id="outVh" style="color: var(--primary);">—</div>
+        </div>
+        <div class="readout-card">
+          <div class="label">Vel. Deriva (vd)</div>
+          <div class="value" id="outVd">—</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Leituras Flutuantes -->
-    <div class="floating-dashboard">
-      <div class="readout-card">
-        <div class="label">Raio (r)</div>
-        <div class="value" id="outR">—</div>
-      </div>
-      <div class="readout-card">
-        <div class="label">Período (T)</div>
-        <div class="value" id="outT">—</div>
-      </div>
-      <div class="readout-card">
-        <div class="label">Velocidade |v|</div>
-        <div class="value" id="outV">—</div>
-      </div>
-    </div>
-
-    <!-- Canvas Principal -->
+    <!-- Canvas Principal Compartilhado -->
     <canvas id="scene" role="img" aria-label="Simulação Física"></canvas>
 
-    <!-- Legenda visual (Oculta no Mobile) -->
-    <div class="floating-legend">
+    <!-- Legenda Lorentz -->
+    <div class="floating-legend" id="legendLorentz">
       <div class="legend-item"><span class="dot" style="background:var(--negative)"></span> Elétron / Carga (-)</div>
       <div class="legend-item"><span class="dot" style="background:var(--positive)"></span> Próton / Carga (+)</div>
       <div class="legend-item"><span class="dot" style="background:var(--field)"></span> Campo Mag. (B)</div>
-      <div class="legend-item"><span class="dot" style="background:var(--force)"></span> Força Mag. (F)</div>
-      <div class="legend-item"><span class="dot" style="background:var(--velocity)"></span> Velocidade (v)</div>
+      <div class="legend-item"><span class="dot" style="background:var(--force-mag)"></span> Força Mag. (F)</div>
     </div>
 
-    <!-- Controles de Playback -->
+    <!-- Legenda Hall -->
+    <div class="floating-legend" id="legendHall" style="display: none;">
+      <div class="legend-item"><span class="dot" style="background:var(--current)"></span> Sentido da Corrente (I)</div>
+      <div class="legend-item"><span class="dot" style="background:var(--field)"></span> Campo Mag. (B)</div>
+      <div class="legend-item"><span class="dot" style="background:var(--force-mag)"></span> Força Magnética (Fm)</div>
+      <div class="legend-item"><span class="dot" style="background:var(--force-elec)"></span> Força Elétrica (Fe)</div>
+    </div>
+
     <div class="sim-controls">
-      <button id="btnPlay" class="primary"><i class="bi bi-pause-fill"></i> Pausar</button>
-      <button id="btnReset"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
-      <button id="btnClearTrail"><i class="bi bi-eraser-fill"></i> Limpar</button>
+      <button id="btnPlay" class="action-btn primary"><i class="bi bi-pause-fill"></i> Pausar</button>
+      <button id="btnReset" class="action-btn"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
     </div>
-
   </section>
 
-  <!-- PAINEL DE CONTROLE -->
+  <!-- PAINEL DE CONTROLE LATERAL -->
   <aside class="control-panel" id="controlPanel">
     
-    <div class="panel-section">
-      <div class="panel-title"><i class="bi bi-collection-play"></i> Cenários Prontos</div>
-      <div class="presets" id="presetRow"></div>
+    <!-- CONTROLES: LORENTZ -->
+    <div class="control-view active" id="viewLorentz">
+      <div class="panel-section">
+        <div class="panel-title"><i class="bi bi-lightning-charge"></i> Partícula</div>
+        <div class="toggle-group" id="chargeToggle">
+          <button data-sign="1">Próton (+)</button>
+          <button data-sign="-1" class="active">Elétron (-)</button>
+        </div>
+        <div id="lorCharge"></div>
+        <div class="note" id="particleCaption"></div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-title"><i class="bi bi-magnet"></i> Ambiente 3D</div>
+        <div id="lorField"></div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-title"><i class="bi bi-camera-video"></i> Visualização</div>
+        <div class="switch-row"><label>Câmera acompanha deriva</label><input type="checkbox" id="lorFollow" checked></div>
+        <div class="switch-row"><label>Mostrar vetores (v, F)</label><input type="checkbox" id="lorVectors" checked></div>
+        <div class="switch-row"><label>Mostrar Rastro</label><input type="checkbox" id="lorTrail" checked></div>
+      </div>
     </div>
 
-    <div class="panel-section">
-      <div class="panel-title"><i class="bi bi-lightning-charge"></i> Partícula</div>
-      <div class="charge-selector">
-        <button data-sign="1" data-active="false">Próton (+)</button>
-        <button data-sign="-1" data-active="true">Elétron (-)</button>
+    <!-- CONTROLES: HALL -->
+    <div class="control-view" id="viewHall">
+      <div class="panel-section">
+        <div class="panel-title"><i class="bi bi-layers"></i> Material Condutor</div>
+        <div class="field">
+          <div class="field-header"><label>Material</label></div>
+          <div class="input-with-unit" style="padding: 6px;">
+            <select id="hallMaterial">
+              <option value="cu">Cobre (Cu)</option>
+              <option value="au">Ouro (Au)</option>
+              <option value="si_n">Silício Tipo N</option>
+              <option value="si_p">Silício Tipo P</option>
+            </select>
+          </div>
+        </div>
+        <div id="hallGeom"></div>
+        <div class="note" id="hallMaterialDesc"></div>
       </div>
-      <div id="groupCharge"></div>
-      <div id="groupMass"></div>
-      <div class="note" id="particleCaption"></div>
-    </div>
-
-    <div class="panel-section">
-      <div class="panel-title"><i class="bi bi-magnet"></i> Ambiente Físico</div>
-      <div id="groupFieldVelocity"></div>
-    </div>
-
-    <!-- Seção Avançada (3D) -->
-    <details class="panel-section advanced-section">
-      <summary class="panel-title"><i class="bi bi-box"></i> Modo 3D (Avançado)</summary>
-      <div id="groupAdvanced"></div>
-      <div class="note">Adicionar velocidades paralelas a <b>B</b> ou inclinar o campo magnético gera o movimento helicoidal tridimensional (hélice) característico.</div>
-    </details>
-
-    <div class="panel-section">
-      <div class="panel-title"><i class="bi bi-camera-video"></i> Visualização (Câmera)</div>
-      <div class="switch-row">
-        <label for="chkFollow">Câmera acompanha a deriva 3D</label>
-        <input type="checkbox" id="chkFollow" checked>
+      <div class="panel-section">
+        <div class="panel-title"><i class="bi bi-magnet"></i> Circuito e Campo</div>
+        <div id="hallCircuit"></div>
       </div>
-      <div class="switch-row">
-        <label for="chkVectors">Mostrar vetores (v, F)</label>
-        <input type="checkbox" id="chkVectors" checked>
+      <div class="panel-section">
+        <div class="panel-title"><i class="bi bi-info-circle"></i> Física do Efeito Hall</div>
+        <div class="note">
+          No estado estacionário, os portadores de carga se acumulam nas bordas criando um Campo Elétrico transversal.<br><br>
+          A Voltagem de Hall ocorre quando a <b>Força Elétrica (Fe) anula exatamente a Força Magnética (Fm)</b>, permitindo que a corrente flua em linha reta.
+        </div>
       </div>
-      <div class="switch-row">
-        <label for="chkTrail">Desenhar trajetória</label>
-        <input type="checkbox" id="chkTrail" checked>
-      </div>
-      <div class="switch-row">
-        <label for="chkField">Desenhar grade do Campo B</label>
-        <input type="checkbox" id="chkField" checked>
-      </div>
-      <!-- A Escala Dinâmica será atualizada aqui em tempo real -->
-      <div class="note" id="scaleNote"></div>
     </div>
     
   </aside>
@@ -518,627 +406,583 @@
 <script>
 'use strict';
 
-// Constantes do SI
-const ELEMENTARY_CHARGE = 1.602176634e-19; 
-const ELECTRON_MASS = 9.1093837015e-31; 
-const PROTON_MASS = 1.67262192369e-27;
-const C_LIGHT = 299792458; 
+// Aguarda o DOM estar 100% carregado antes de instanciar a simulação
+window.addEventListener('DOMContentLoaded', () => {
 
-/* =========================================================================
-   MÓDULO: UNITS (Formatação Científica/SI)
-   ========================================================================= */
-const Units = (() => {
-  const PREFIXES = [
-    {exp:-15,sym:'f'},{exp:-12,sym:'p'},{exp:-9,sym:'n'},{exp:-6,sym:'µ'},{exp:-3,sym:'m'},
-    {exp:0,sym:''},{exp:3,sym:'k'},{exp:6,sym:'M'},{exp:9,sym:'G'},{exp:12,sym:'T'}
-  ];
-  function format(value, unit, digits) {
-    if (value === null || value === undefined || !isFinite(value)) return '—';
-    if (value === 0) return '0 ' + unit;
-    const abs = Math.abs(value);
-    if (abs < 1e-15 || abs >= 1e15) return value.toExponential(2) + ' ' + unit;
-    let chosen = {exp:0, sym:''};
-    for (const p of PREFIXES) { if (abs >= Math.pow(10, p.exp) * 0.999) chosen = p; }
-    const scaled = value / Math.pow(10, chosen.exp);
-    const d = digits !== undefined ? digits : (Math.abs(scaled) >= 100 ? 1 : Math.abs(scaled) >= 10 ? 2 : 3);
-    return scaled.toFixed(d) + ' ' + chosen.sym + unit;
-  }
-  function niceStep(rawStep) {
-    if (!isFinite(rawStep) || rawStep <= 0) return 1;
-    const exp = Math.floor(Math.log10(rawStep));
-    const base = rawStep / Math.pow(10, exp);
-    let niceBase = base < 1.5 ? 1 : base < 3.5 ? 2 : base < 7.5 ? 5 : 10;
-    return niceBase * Math.pow(10, exp);
-  }
-  return { format, niceStep };
-})();
+  // --- CONSTANTES SI ---
+  const E_CHARGE = 1.602176634e-19; 
+  const M_ELECTRON = 9.1093837015e-31; 
+  const M_PROTON = 1.67262192369e-27;
 
-/* =========================================================================
-   MÓDULO: PHYSICS (Motor Numérico 3D - Algoritmo de Boris)
-   ========================================================================= */
-const Physics = (() => {
-  function cross(a, b) { return [ a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0] ]; }
-  function addV(a, b) { return [a[0]+b[0], a[1]+b[1], a[2]+b[2]]; }
-
-  function advance(y, params, dt) {
-    const { q, m, B } = params;
-    const v = [y[3], y[4], y[5]];
-    const k = (q * dt) / (2 * m);
-    const t = [B[0]*k, B[1]*k, B[2]*k];
-    const tMagSq = t[0]*t[0] + t[1]*t[1] + t[2]*t[2];
-    const vPrime = addV(v, cross(v, t));
-    const s = [ (2*t[0])/(1+tMagSq), (2*t[1])/(1+tMagSq), (2*t[2])/(1+tMagSq) ];
-    const vNew = addV(v, cross(vPrime, s));
-    return [ y[0]+vNew[0]*dt, y[1]+vNew[1]*dt, y[2]+vNew[2]*dt, vNew[0], vNew[1], vNew[2] ];
-  }
-
-  function derivedQuantities(y, params) {
-    const { q, m, B } = params;
-    const v = [y[3], y[4], y[5]];
-    const Bmag = Math.hypot(B[0], B[1], B[2]);
-    const speed = Math.hypot(v[0], v[1], v[2]);
-    if (Bmag < 1e-30 || Math.abs(q) < 1e-30) return { r:null, T:null, w:null, speed };
-
-    const Bhat = [B[0]/Bmag, B[1]/Bmag, B[2]/Bmag];
-    const vDotBhat = v[0]*Bhat[0] + v[1]*Bhat[1] + v[2]*Bhat[2];
-    const vPerp = [v[0]-Bhat[0]*vDotBhat, v[1]-Bhat[1]*vDotBhat, v[2]-Bhat[2]*vDotBhat];
-    const vPerpMag = Math.hypot(vPerp[0], vPerp[1], vPerp[2]);
-
-    const w = Math.abs(q) * Bmag / m;
-    const T = 2 * Math.PI / w;
-    const r = m * vPerpMag / (Math.abs(q) * Bmag);
-    return { r, T, w, speed };
-  }
-  return { advance, derivedQuantities, cross };
-})();
-
-/* =========================================================================
-   MÓDULO: RENDER (Gráficos em Canvas + Interação MOUSE/TOUCH)
-   ========================================================================= */
-const Render = (() => {
-  let canvas, ctx, parent;
-  let W = 0, H = 0, DPR = 1;
-  
-  // Variáveis da Câmera Numérica
-  let camX = 0, camY = 0, baseScale = 1;
-  
-  // Variáveis Interativas (Pan & Zoom)
-  let manualZoom = 1;
-  let manualPanX = 0; 
-  let manualPanY = 0;
-  
-  // Estado de Mouse/Touch
-  let isDragging = false;
-  let lastMouseX = 0;
-  let lastMouseY = 0;
-
-  const trailPoints = [];
-  const MAX_TRAIL = 2500;
-  
-  const COLORS = {
-    field: '#10B981', 
-    axis: 'rgba(0,0,0,0.1)',
-    grid: 'rgba(0,0,0,0.03)',
-    text: '#6B7280'
+  // Materiais (Densidade de portadores 'n' em m^-3 e sinal do portador)
+  const MATERIALS = {
+    cu:   { name: 'Cobre', n: 8.49e28, sign: -1, desc: 'Metal condutor padrão. Altíssima densidade de elétrons livres (Tensão Vh gerada é na escala de microvolts).' },
+    au:   { name: 'Ouro', n: 5.90e28, sign: -1, desc: 'Excelente condutor metálico.' },
+    si_n: { name: 'Silício (Tipo N)', n: 1.00e21, sign: -1, desc: 'Semicondutor dopado com excesso de elétrons. Gera tensões de Hall bem maiores (escala de milivolts).' },
+    si_p: { name: 'Silício (Tipo P)', n: 1.00e21, sign: 1, desc: 'Semicondutor dopado. A corrente é gerada pelo movimento de "Buracos" positivos.' }
   };
 
-  function init(canvasEl) { 
-    canvas = canvasEl; 
-    ctx = canvas.getContext('2d'); 
-    parent = canvas.parentElement;
-    window.addEventListener('resize', resize);
-    resize(); 
-    setupInteraction();
-  }
+  // --- MÓDULO: FORMATADOR ---
+  const Units = (() => {
+    const PREFIXES = [ {exp:-12,sym:'p'},{exp:-9,sym:'n'},{exp:-6,sym:'µ'},{exp:-3,sym:'m'},{exp:0,sym:''},{exp:3,sym:'k'},{exp:6,sym:'M'},{exp:9,sym:'G'} ];
+    function format(value, unit) {
+      if (!isFinite(value) || value === 0) return '0 ' + unit;
+      const abs = Math.abs(value);
+      if (abs < 1e-12 || abs >= 1e12) return value.toExponential(2) + ' ' + unit;
+      let chosen = {exp:0, sym:''};
+      for (const p of PREFIXES) { if (abs >= Math.pow(10, p.exp) * 0.9) chosen = p; }
+      const scaled = value / Math.pow(10, chosen.exp);
+      const d = (Math.abs(scaled) >= 100) ? 1 : (Math.abs(scaled) >= 10 ? 2 : 3);
+      return scaled.toFixed(d) + ' ' + chosen.sym + unit;
+    }
+    return { format };
+  })();
 
-  function setupInteraction() {
-    // --- 1. EVENTOS DE MOUSE (Desktop) ---
-    canvas.addEventListener('mousedown', (e) => {
-      isDragging = true;
-      lastMouseX = e.clientX;
-      lastMouseY = e.clientY;
-    });
-
-    window.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      const dx = e.clientX - lastMouseX;
-      const dy = e.clientY - lastMouseY;
-      lastMouseX = e.clientX;
-      lastMouseY = e.clientY;
+  // --- MÓDULO: GERADOR DE UI ---
+  const UIBuilder = (() => {
+    function createSlider(containerId, cfg, onChange) {
+      const container = document.getElementById(containerId);
+      if (!container) return () => {}; // Segurança
       
-      const totalScale = baseScale * manualZoom;
-      manualPanX -= dx / totalScale;
-      manualPanY += dy / totalScale;
-    });
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      wrap.innerHTML = `
+        <div class="field-header">
+          <label>${cfg.label}</label>
+          <div class="input-with-unit">
+            <input type="number" id="num_${cfg.id}" value="${cfg.def}" step="any">
+            <span class="unit">${cfg.unit}</span>
+          </div>
+        </div>
+        <input type="range" id="rng_${cfg.id}" min="${cfg.min}" max="${cfg.max}" step="${cfg.step}" value="${cfg.def}">
+      `;
+      container.appendChild(wrap);
 
-    window.addEventListener('mouseup', () => { isDragging = false; });
-    window.addEventListener('mouseleave', () => { isDragging = false; });
+      const rng = wrap.querySelector(`#rng_${cfg.id}`);
+      const num = wrap.querySelector(`#num_${cfg.id}`);
 
-    canvas.addEventListener('wheel', (e) => {
-      e.preventDefault(); 
-      const rect = canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
+      const setVal = (v) => {
+        v = Math.min(cfg.max, Math.max(cfg.min, v));
+        rng.value = v; num.value = v;
+        onChange(cfg.id, v);
+      };
+      rng.addEventListener('input', () => setVal(parseFloat(rng.value)));
+      num.addEventListener('change', () => setVal(parseFloat(num.value) || 0));
+      return setVal;
+    }
+    return { createSlider };
+  })();
 
-      const oldTotalScale = baseScale * manualZoom;
-      const zoomFactor = e.deltaY < 0 ? 1.15 : (1 / 1.15);
+  // ============================================================================
+  // SISTEMA DE CÂMERA E RENDER GLOBAL
+  // ============================================================================
+  const Engine = (() => {
+    let canvas, ctx, parent;
+    let W = 800, H = 600, DPR = 1;
+    let camX = 0, camY = 0, scale = 1;
+    let isDragging = false, lastX = 0, lastY = 0;
+    let onResizeCallback = null;
+
+    function init() {
+      canvas = document.getElementById('scene');
+      ctx = canvas.getContext('2d');
+      parent = document.getElementById('simContainer');
       
-      let newManualZoom = Math.max(0.01, Math.min(manualZoom * zoomFactor, 50));
-      const newTotalScale = baseScale * newManualZoom;
+      // ResizeObserver garante que o canvas pegue o tamanho exato APÓS o CSS renderizar
+      const resizeObserver = new ResizeObserver(() => {
+        resize();
+        if(onResizeCallback) onResizeCallback();
+      });
+      resizeObserver.observe(parent);
 
-      manualPanX += (mx - W/2) * (1 / oldTotalScale - 1 / newTotalScale);
-      manualPanY -= (my - H/2) * (1 / oldTotalScale - 1 / newTotalScale);
-      manualZoom = newManualZoom;
-    }, { passive: false });
+      setupInteractions();
+    }
 
-    canvas.addEventListener('dblclick', () => { resetView(); });
+    function setupInteractions() {
+      // Mouse Pan/Zoom Genérico
+      canvas.addEventListener('mousedown', e => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
+      window.addEventListener('mousemove', e => {
+        if(!isDragging) return;
+        camX -= (e.clientX - lastX) / scale;
+        camY += (e.clientY - lastY) / scale;
+        lastX = e.clientX; lastY = e.clientY;
+      });
+      window.addEventListener('mouseup', () => isDragging = false);
+      window.addEventListener('mouseleave', () => isDragging = false);
+      
+      canvas.addEventListener('wheel', e => {
+        e.preventDefault();
+        const zoomFactor = e.deltaY < 0 ? 1.15 : (1 / 1.15);
+        scale *= zoomFactor;
+      }, {passive: false});
+      
+      // Touch Pan
+      canvas.addEventListener('touchstart', e => {
+        if(e.touches.length === 1) { isDragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; }
+      }, {passive:false});
+      canvas.addEventListener('touchmove', e => {
+        e.preventDefault();
+        if(isDragging && e.touches.length === 1){
+          camX -= (e.touches[0].clientX - lastX) / scale;
+          camY += (e.touches[0].clientY - lastY) / scale;
+          lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+        }
+      }, {passive:false});
+      canvas.addEventListener('touchend', () => isDragging = false);
+      
+      canvas.addEventListener('dblclick', () => { camX=0; camY=0; if(onResizeCallback) onResizeCallback(); });
+    }
 
-    // --- 2. EVENTOS TOUCH (Mobile) ---
-    let initialPinchDistance = null;
-    let initialPinchZoom = 1;
+    function resize() {
+      DPR = window.devicePixelRatio || 1;
+      const rect = parent.getBoundingClientRect();
+      // Fallback seguro se largura inicial for 0 no primeiro frame
+      W = rect.width || parent.clientWidth || 800; 
+      H = rect.height || parent.clientHeight || 600;
+      
+      canvas.width = W * DPR; 
+      canvas.height = H * DPR;
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    }
 
-    canvas.addEventListener('touchstart', (e) => {
-      e.preventDefault(); // Impede rolagem e "pull to refresh" da página
-      if (e.touches.length === 1) {
-        isDragging = true;
-        lastMouseX = e.touches[0].clientX;
-        lastMouseY = e.touches[0].clientY;
-      } else if (e.touches.length === 2) {
-        isDragging = false;
-        initialPinchDistance = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        initialPinchZoom = manualZoom;
+    function clear() {
+      ctx.clearRect(0,0,W,H);
+      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0,0,W,H);
+    }
+
+    function drawGrid() {
+      ctx.strokeStyle = 'rgba(0,0,0,0.03)'; ctx.lineWidth = 1;
+      for(let i=0; i<W; i+=50) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,H); ctx.stroke(); }
+      for(let i=0; i<H; i+=50) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(W,i); ctx.stroke(); }
+    }
+
+    function worldToScreen(x, y) { return [ W/2 + (x - camX)*scale, H/2 - (y - camY)*scale ]; }
+    function getDim() { return {W, H, scale}; }
+    function setCamera(x, y, s) { camX = x; camY = y; scale = s; }
+    function setOnResize(cb) { onResizeCallback = cb; }
+    
+    function drawArrow(x1, y1, x2, y2, color, width=2) {
+      const angle = Math.atan2(y2-y1, x2-x1);
+      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - 10*Math.cos(angle-0.4), y2 - 10*Math.sin(angle-0.4));
+      ctx.lineTo(x2 - 10*Math.cos(angle+0.4), y2 - 10*Math.sin(angle+0.4));
+      ctx.closePath(); ctx.fill();
+    }
+
+    return { init, clear, drawGrid, worldToScreen, setCamera, getDim, ctx, drawArrow, setOnResize };
+  })();
+
+  // ============================================================================
+  // SIMULAÇÃO 1: FORÇA DE LORENTZ
+  // ============================================================================
+  const SimLorentz = (() => {
+    let params = { qAbs: 1, sign: -1, Bz: 1, vx: 1e7, vy: 0, vz: 0 };
+    let state = { y: [0,0,0, 0,0,0] }, simTime = 0, trail = [];
+    let playing = true, autoPace = 1, dt = 1e-3;
+
+    function initUI() {
+      UIBuilder.createSlider('lorCharge', {id:'lor_q', label:'Carga (x e)', min:1, max:5, step:1, def:1, unit:''}, (id,v)=> {params.qAbs=v; reset();});
+      UIBuilder.createSlider('lorField', {id:'lor_Bz', label:'Campo Bz', min:-2, max:2, step:0.1, def:1, unit:'T'}, (id,v)=> {params.Bz=v; reset();});
+      UIBuilder.createSlider('lorField', {id:'lor_vx', label:'Vel. vx', min:-5e7, max:5e7, step:1e6, def:1e7, unit:'m/s'}, (id,v)=> {params.vx=v; reset();});
+      UIBuilder.createSlider('lorField', {id:'lor_vz', label:'Vel. vz (Hélice)', min:-5e7, max:5e7, step:1e6, def:0, unit:'m/s'}, (id,v)=> {params.vz=v; reset();});
+      
+      document.querySelectorAll('#chargeToggle button').forEach(b => {
+        b.addEventListener('click', e => {
+          document.querySelectorAll('#chargeToggle button').forEach(btn=>btn.classList.remove('active'));
+          e.target.classList.add('active');
+          params.sign = parseInt(e.target.dataset.sign);
+          reset();
+        });
+      });
+    }
+
+    function reset() {
+      trail = []; simTime = 0;
+      state.y = [0,0,0, params.vx, params.vy, params.vz];
+      
+      const q = params.sign * params.qAbs * E_CHARGE;
+      const m = params.sign > 0 ? M_PROTON : M_ELECTRON;
+      const vPerp = Math.hypot(params.vx, params.vy);
+      
+      // Cálculo do raio e período
+      let r = 1;
+      let T = null;
+      if (vPerp > 1e-9 && Math.abs(params.Bz) > 1e-9) {
+        r = (m * vPerp) / (Math.abs(q) * Math.abs(params.Bz));
+        T = (2*Math.PI*m) / (Math.abs(q)*Math.abs(params.Bz));
       }
-    }, { passive: false });
+      
+      const dim = Engine.getDim();
+      const safeW = dim.W || 800;
+      const safeH = dim.H || 600;
+      // Previne scale igual a 0 ou infinito
+      const scale = Math.min(safeW, safeH) * 0.35 / (r > 1e-15 ? r : 1);
+      Engine.setCamera(0, 0, scale);
+      
+      autoPace = T ? T/2 : 1/3; // Faz 1 ciclo simulado acontecer a cada 2s reais
+      dt = T ? T/50 : 1/200;
 
-    canvas.addEventListener('touchmove', (e) => {
-      e.preventDefault(); 
-      if (e.touches.length === 1 && isDragging) {
-        // PAN
-        const dx = e.touches[0].clientX - lastMouseX;
-        const dy = e.touches[0].clientY - lastMouseY;
-        lastMouseX = e.touches[0].clientX;
-        lastMouseY = e.touches[0].clientY;
+      // HUD
+      const elR = document.getElementById('outR');
+      if(elR) elR.textContent = T ? Units.format(r, 'm') : '—';
+      const elT = document.getElementById('outT');
+      if(elT) elT.textContent = T ? Units.format(T, 's') : '—';
+      const elV = document.getElementById('outV');
+      if(elV) elV.textContent = Units.format(Math.hypot(params.vx,params.vy,params.vz), 'm/s');
+      
+      const caption = document.getElementById('particleCaption');
+      if(caption) caption.innerHTML = `Carga (q): ${Units.format(q,'C')} <br> Massa (m): ${Units.format(m,'kg')}`;
+    }
 
-        const totalScale = baseScale * manualZoom;
-        manualPanX -= dx / totalScale;
-        manualPanY += dy / totalScale;
-      } else if (e.touches.length === 2 && initialPinchDistance) {
-        // PINCH TO ZOOM
-        const currentDistance = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        const zoomFactor = currentDistance / initialPinchDistance;
-        let newManualZoom = Math.max(0.01, Math.min(initialPinchZoom * zoomFactor, 50));
-        manualZoom = newManualZoom;
-        // Obs: Versão simplificada. O zoom centra no meio da tela no mobile para manter simples
+    function advance(elapsed) {
+      if(!playing) return;
+      const q = params.sign * params.qAbs * E_CHARGE;
+      const m = params.sign > 0 ? M_PROTON : M_ELECTRON;
+      const B = [0, 0, params.Bz];
+      
+      const steps = Math.ceil((elapsed * autoPace) / dt);
+      for(let i=0; i<steps; i++){
+        // Algoritmo de Boris (Alta Precisão Magnética)
+        const v = [state.y[3], state.y[4], state.y[5]];
+        const k = (q * dt) / (2 * m);
+        const t = [B[0]*k, B[1]*k, B[2]*k];
+        const tMagSq = t[0]*t[0] + t[1]*t[1] + t[2]*t[2];
+        const vPrime = [v[0] + v[1]*t[2]-v[2]*t[1], v[1] + v[2]*t[0]-v[0]*t[2], v[2] + v[0]*t[1]-v[1]*t[0]];
+        const s = [2*t[0]/(1+tMagSq), 2*t[1]/(1+tMagSq), 2*t[2]/(1+tMagSq)];
+        const vNew = [v[0] + vPrime[1]*s[2]-vPrime[2]*s[1], v[1] + vPrime[2]*s[0]-vPrime[0]*s[2], v[2] + vPrime[0]*s[1]-vPrime[1]*s[0]];
+        
+        state.y[0] += vNew[0]*dt; state.y[1] += vNew[1]*dt; state.y[2] += vNew[2]*dt;
+        state.y[3] = vNew[0]; state.y[4] = vNew[1]; state.y[5] = vNew[2];
+        simTime += dt;
       }
-    }, { passive: false });
-
-    canvas.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      if (e.touches.length < 2) {
-        initialPinchDistance = null;
+      
+      const checkTrail = document.getElementById('lorTrail');
+      if(checkTrail && checkTrail.checked) {
+        trail.push([state.y[0], state.y[1]]);
+        if(trail.length > 2000) trail.shift();
       }
-      if (e.touches.length === 0) {
-        isDragging = false;
-      } else if (e.touches.length === 1) {
-        // Restaura âncora do dedo restante para evitar salto de pan
-        lastMouseX = e.touches[0].clientX;
-        lastMouseY = e.touches[0].clientY;
-        isDragging = true;
+    }
+
+    function render() {
+      Engine.clear(); Engine.drawGrid();
+      const ctx = Engine.ctx;
+      const dim = Engine.getDim();
+
+      // Camera Follow Drift
+      const checkFollow = document.getElementById('lorFollow');
+      if(checkFollow && checkFollow.checked) {
+        // Se houver drift em x,y acompanhamos.
+        // Aqui o campo é só Bz, logo a deriva se dá no eixo Z puro e v_x e v_y orbitam o zero.
+        // Câmera no 2D fica centralizada no xy perfeitamente.
       }
-    }, { passive: false });
-  }
 
-  function resize() {
-    DPR = window.devicePixelRatio || 1;
-    W = parent.clientWidth;
-    H = parent.clientHeight;
-    canvas.width = W * DPR; 
-    canvas.height = H * DPR;
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  }
+      // Draw Field Background
+      if(Math.abs(params.Bz) > 0.1) {
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.3)';
+        const step = 60;
+        for(let y=0; y<dim.H; y+=step) {
+          for(let x=0; x<dim.W; x+=step) {
+            if(params.Bz > 0) { ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); }
+            else { ctx.beginPath(); ctx.moveTo(x-3,y-3); ctx.lineTo(x+3,y+3); ctx.moveTo(x-3,y+3); ctx.lineTo(x+3,y-3); ctx.stroke(); }
+          }
+        }
+      }
 
-  function setScale(pxPerMeter) { baseScale = pxPerMeter > 0 ? pxPerMeter : 1; }
-  function setCamera(x, y) { camX = x; camY = y; }
-  function clearTrail() { trailPoints.length = 0; }
-  function resetView() { manualZoom = 1; manualPanX = 0; manualPanY = 0; }
-  function getTotalScale() { return baseScale * manualZoom; }
-  
-  function pushTrailPoint(x, y) {
-    trailPoints.push([x, y]);
-    if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
-  }
+      const [px, py] = Engine.worldToScreen(state.y[0], state.y[1]);
+      const color = params.sign > 0 ? '#EF4444' : '#3B82F6';
 
-  function worldToScreen(x, y) {
-    const totalScale = baseScale * manualZoom;
-    const effectiveCamX = camX + manualPanX;
-    const effectiveCamY = camY + manualPanY;
-    return [ 
-      W/2 + (x - effectiveCamX) * totalScale, 
-      H/2 - (y - effectiveCamY) * totalScale 
-    ];
-  }
+      // Trail
+      const checkTrail = document.getElementById('lorTrail');
+      if(checkTrail && checkTrail.checked && trail.length > 1) {
+        ctx.strokeStyle = color; ctx.globalAlpha = 0.5; ctx.lineWidth = 2;
+        ctx.beginPath();
+        const [sx0, sy0] = Engine.worldToScreen(trail[0][0], trail[0][1]);
+        ctx.moveTo(sx0, sy0);
+        for(let i=1; i<trail.length; i++) {
+          const [sx, sy] = Engine.worldToScreen(trail[i][0], trail[i][1]);
+          ctx.lineTo(sx, sy);
+        }
+        ctx.stroke(); ctx.globalAlpha = 1;
+      }
 
-  function drawArrow(x1, y1, x2, y2, color, width=2) {
-    const angle = Math.atan2(y2-y1, x2-x1);
-    const headLen = 10;
-    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
-    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x2, y2);
-    ctx.lineTo(x2 - headLen*Math.cos(angle-0.4), y2 - headLen*Math.sin(angle-0.4));
-    ctx.lineTo(x2 - headLen*Math.cos(angle+0.4), y2 - headLen*Math.sin(angle+0.4));
-    ctx.closePath(); ctx.fill();
-  }
+      // Vectors
+      const checkVectors = document.getElementById('lorVectors');
+      if(checkVectors && checkVectors.checked) {
+        const vx = state.y[3], vy = state.y[4];
+        const vMag = Math.hypot(vx, vy);
+        if(vMag > 1e-9) Engine.drawArrow(px, py, px+(vx/vMag)*60, py-(vy/vMag)*60, '#F59E0B');
+        
+        const q = params.sign * params.qAbs * E_CHARGE;
+        const Fx = q * (vy * params.Bz);
+        const Fy = q * (-vx * params.Bz);
+        const fMag = Math.hypot(Fx, Fy);
+        if(fMag > 1e-30) Engine.drawArrow(px, py, px+(Fx/fMag)*70, py-(Fy/fMag)*70, '#8B5CF6');
+      }
 
-  function drawFieldBackground(Bz) {
-    if (Math.abs(Bz) < 1e-9) return;
-    
-    const totalScale = baseScale * manualZoom;
-    const effectiveCamX = camX + manualPanX;
-    const effectiveCamY = camY + manualPanY;
-    
-    const stepM = Units.niceStep(80 / totalScale);
-    
-    // Calcula as bordas visíveis
-    const startWX = Math.floor((effectiveCamX - (W/2)/totalScale) / stepM) * stepM;
-    const startWY = Math.floor((effectiveCamY - (H/2)/totalScale) / stepM) * stepM;
-    const endWX = effectiveCamX + (W/2)/totalScale;
-    const endWY = effectiveCamY + (H/2)/totalScale;
-    
-    ctx.strokeStyle = COLORS.field;
-    ctx.fillStyle = COLORS.field;
-    ctx.lineWidth = 2;
-    ctx.globalAlpha = 0.4;
-    
-    for (let wy = startWY; wy <= endWY + stepM; wy += stepM) {
-      for (let wx = startWX; wx <= endWX + stepM; wx += stepM) {
-        const [x, y] = worldToScreen(wx, wy);
-        if (Bz > 0) { // Saindo da tela
-          ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2); ctx.fill();
-        } else { // Entrando na tela
-          ctx.beginPath();
-          ctx.moveTo(x-4, y-4); ctx.lineTo(x+4, y+4);
-          ctx.moveTo(x-4, y+4); ctx.lineTo(x+4, y-4);
-          ctx.stroke();
+      // Draw Particle
+      ctx.fillStyle = color; ctx.beginPath(); ctx.arc(px, py, 10, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#FFF'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(params.sign > 0 ? '+' : '-', px, py);
+    }
+
+    return { initUI, reset, advance, render, togglePlay: (v) => playing=v };
+  })();
+
+  // ============================================================================
+  // SIMULAÇÃO 2: EFEITO HALL
+  // ============================================================================
+  const SimHall = (() => {
+    let params = { mat: 'cu', I: 5, Bz: 1, width: 10e-3, thick: 1e-3 };
+    let playing = true;
+    let particles = [];
+
+    function initUI() {
+      UIBuilder.createSlider('hallCircuit', {id:'hall_I', label:'Corrente (I)', min:0, max:20, step:0.5, def:5, unit:'A'}, (id,v)=> {params.I=v; updatePhysics();});
+      UIBuilder.createSlider('hallCircuit', {id:'hall_Bz', label:'Campo Magnético (Bz)', min:-2, max:2, step:0.1, def:1, unit:'T'}, (id,v)=> {params.Bz=v; updatePhysics();});
+      UIBuilder.createSlider('hallGeom', {id:'hall_w', label:'Largura Placa (w)', min:5, max:20, step:1, def:10, unit:'mm'}, (id,v)=> {params.width=v*1e-3; updatePhysics();});
+      UIBuilder.createSlider('hallGeom', {id:'hall_t', label:'Espessura (t)', min:0.1, max:2, step:0.1, def:1, unit:'mm'}, (id,v)=> {params.thick=v*1e-3; updatePhysics();});
+      
+      const matSelect = document.getElementById('hallMaterial');
+      if (matSelect) {
+        matSelect.addEventListener('change', e => {
+          params.mat = e.target.value;
+          const descEl = document.getElementById('hallMaterialDesc');
+          if(descEl) descEl.textContent = MATERIALS[params.mat].desc;
+          updatePhysics();
+        });
+        const descEl = document.getElementById('hallMaterialDesc');
+        if(descEl) descEl.textContent = MATERIALS['cu'].desc;
+      }
+    }
+
+    function reset() {
+      particles = [];
+      for(let i=0; i<40; i++) {
+        particles.push({ x: Math.random(), y: Math.random() });
+      }
+      Engine.setCamera(0, 0, 1);
+      updatePhysics();
+    }
+
+    function updatePhysics() {
+      const mat = MATERIALS[params.mat];
+      const n = mat.n;
+      const q = mat.sign * E_CHARGE;
+      
+      // V_H = (I * B) / (n * t * e)
+      const Vh = (params.I * params.Bz) / (n * params.thick * E_CHARGE);
+      // v_d = I / (n * e * A)
+      const area = params.width * params.thick;
+      const vd = params.I / (n * E_CHARGE * area);
+
+      const elVh = document.getElementById('outVh');
+      if(elVh) elVh.textContent = Units.format(Math.abs(Vh), 'V'); // Mostra magnitude da Tensão
+      
+      const elVd = document.getElementById('outVd');
+      if(elVd) elVd.textContent = Units.format(Math.abs(vd), 'm/s');
+    }
+
+    function advance(elapsed) {
+      if(!playing) return;
+      // Fator visual puramente para animar as cargas fluindo
+      const speedVisual = (params.I / 20) * 0.8 * elapsed; 
+      const mat = MATERIALS[params.mat];
+      const dir = mat.sign > 0 ? 1 : -1;
+      
+      particles.forEach(p => {
+        p.x += speedVisual * dir;
+        if(p.x > 1) p.x -= 1;
+        if(p.x < 0) p.x += 1;
+      });
+    }
+
+    function render() {
+      Engine.clear();
+      const ctx = Engine.ctx;
+      const {W, H} = Engine.getDim();
+      if(W === 0 || H === 0) return; // Evitar erros no frame inicial vazio
+      
+      const mat = MATERIALS[params.mat];
+      
+      const pW = W * 0.6;
+      const pH = (params.width / 20e-3) * (H * 0.4); 
+      const px = (W - pW)/2;
+      const py = (H - pH)/2;
+
+      // Draw Field B Background
+      if(Math.abs(params.Bz) > 0.1) {
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.2)';
+        const step = 40;
+        for(let y=0; y<H; y+=step) {
+          for(let x=0; x<W; x+=step) {
+            if(params.Bz > 0) { ctx.beginPath(); ctx.arc(x,y,2,0,Math.PI*2); ctx.fill(); }
+            else { ctx.beginPath(); ctx.moveTo(x-2,y-2); ctx.lineTo(x+2,y+2); ctx.moveTo(x-2,y+2); ctx.lineTo(x+2,y-2); ctx.stroke(); }
+          }
+        }
+      }
+
+      // Fios e Placa Condutora
+      ctx.fillStyle = '#CBD5E1'; ctx.fillRect(0, py + pH/2 - 10, px, 20); // Fio Esq
+      ctx.fillRect(px + pW, py + pH/2 - 10, W, 20); // Fio Dir
+      
+      ctx.fillStyle = '#F8FAFC'; ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 3;
+      ctx.fillRect(px, py, pW, pH); ctx.strokeRect(px, py, pW, pH);
+
+      // Corrente Macro (Seta I)
+      if(params.I > 0) {
+        Engine.drawArrow(px/2 - 20, py + pH/2 - 25, px/2 + 20, py + pH/2 - 25, '#DC2626', 3);
+        ctx.fillStyle = '#DC2626'; ctx.font='bold 14px sans-serif'; ctx.fillText('I', px/2, py + pH/2 - 35);
+      }
+
+      // Animando os portadores em trânsito
+      const pColor = mat.sign > 0 ? '#EF4444' : '#3B82F6';
+      particles.forEach(p => {
+        const cx = px + p.x * pW;
+        const cy = py + p.y * pH;
+        ctx.fillStyle = pColor; ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI*2); ctx.fill();
+      });
+
+      // Efeito Hall: Acúmulo de Cargas nas Bordas (Visual)
+      if(params.I > 0 && Math.abs(params.Bz) > 0.1) {
+        // q(v x B)
+        const forceMagY = (mat.sign * (-mat.sign) * params.Bz); 
+        const topIsPos = forceMagY < 0 ? (mat.sign>0 ? false : true) : (mat.sign>0 ? true : false);
+        
+        const numCharges = Math.min(15, Math.ceil(Math.abs(params.Bz * params.I)*2));
+        ctx.font = 'bold 16px monospace';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        
+        for(let i=1; i<=numCharges; i++) {
+          const cx = px + (i/(numCharges+1)) * pW;
+          // Borda Top
+          ctx.fillStyle = topIsPos ? '#EF4444' : '#3B82F6';
+          ctx.fillText(topIsPos ? '+' : '-', cx, py - 12);
+          // Borda Bottom
+          ctx.fillStyle = !topIsPos ? '#EF4444' : '#3B82F6';
+          ctx.fillText(!topIsPos ? '+' : '-', cx, py + pH + 12);
+        }
+
+        // Voltímetro Conectado nas Bordas Transversais
+        ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(px + pW/2, py); ctx.lineTo(px + pW/2, py - 35); ctx.lineTo(px + pW/2 + 70, py - 35); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(px + pW/2, py + pH); ctx.lineTo(px + pW/2, py + pH + 35); ctx.lineTo(px + pW/2 + 70, py + pH + 35); ctx.stroke();
+        
+        ctx.fillStyle = '#1E293B'; ctx.beginPath(); ctx.arc(px + pW/2 + 70, py + pH/2, 22, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#FFF'; ctx.font = 'bold 16px sans-serif'; ctx.fillText('V', px + pW/2 + 70, py + pH/2);
+
+        // Vetor de Força Mag e Força Elétrica em uma Carga representativa no centro
+        if (particles.length > 0) {
+          const centerP = {x: px + 0.5*pW, y: py + 0.5*pH};
+          ctx.fillStyle = pColor; ctx.beginPath(); ctx.arc(centerP.x, centerP.y, 10, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle='#FFF'; ctx.font='bold 12px sans-serif'; ctx.fillText(mat.sign>0?'+':'-', centerP.x, centerP.y);
+          
+          const dFm = forceMagY < 0 ? -1 : 1; 
+          Engine.drawArrow(centerP.x, centerP.y, centerP.x, centerP.y + 35*dFm, '#8B5CF6', 3); // Força Magnética
+          Engine.drawArrow(centerP.x, centerP.y, centerP.x, centerP.y - 35*dFm, '#EC4899', 3); // Força Elétrica reativa
         }
       }
     }
-    ctx.globalAlpha = 1.0;
-  }
 
-  // HUD: Seta para Bx, By
-  function drawInPlaneFieldArrow(Bx, By) {
-    const mag = Math.hypot(Bx, By);
-    if (mag < 1e-9) return;
-    
-    const cx = 50, cy = H - 50, sc = 30; 
-    const dx = (Bx/mag) * Math.min(sc, sc*mag/1.5);
-    const dy = -(By/mag) * Math.min(sc, sc*mag/1.5); 
-    
-    drawArrow(cx, cy, cx+dx, cy+dy, COLORS.field, 3);
-    ctx.fillStyle = COLORS.field;
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('B∥ (Plano xy)', cx+dx+8, cy+dy+4);
-  }
+    return { initUI, reset, advance, render, togglePlay: (v) => playing=v };
+  })();
 
-  function frame(state, opts) {
-    setCamera(opts.camera.x, opts.camera.y);
+  // ============================================================================
+  // APP MANAGER (Orquestrador)
+  // ============================================================================
+  const App = (() => {
+    let currentTab = 'lorentz';
+    let lastTime = null;
+    let isPlaying = true;
 
-    ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#FFFFFF'; 
-    ctx.fillRect(0, 0, W, H);
+    function init() {
+      Engine.init();
+      SimLorentz.initUI();
+      SimHall.initUI();
 
-    ctx.strokeStyle = COLORS.grid; ctx.lineWidth = 1;
-    for(let i=0; i<W; i+=50) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,H); ctx.stroke(); }
-    for(let i=0; i<H; i+=50) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(W,i); ctx.stroke(); }
+      // Callback no Resize para reajustar escala dinamicamente
+      Engine.setOnResize(() => {
+        if(currentTab === 'lorentz') SimLorentz.reset();
+        else SimHall.reset();
+      });
 
-    const [origX, origY] = worldToScreen(0,0);
-    ctx.strokeStyle = COLORS.axis; ctx.lineWidth = 1.5;
-    if(origX >= 0 && origX <= W) { ctx.beginPath(); ctx.moveTo(origX,0); ctx.lineTo(origX,H); ctx.stroke(); }
-    if(origY >= 0 && origY <= H) { ctx.beginPath(); ctx.moveTo(0,origY); ctx.lineTo(W,origY); ctx.stroke(); }
+      // Tabs Logic
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          e.target.classList.add('active');
+          switchTab(e.target.dataset.tab);
+        });
+      });
 
-    if (opts.showField) {
-      drawFieldBackground(opts.Bz);
-      drawInPlaneFieldArrow(opts.Bx, opts.By);
-    }
-
-    const [px, py] = worldToScreen(state.y[0], state.y[1]);
-    
-    const cssStyle = getComputedStyle(document.body);
-    const colorParticle = opts.sign > 0 ? cssStyle.getPropertyValue('--positive').trim() : cssStyle.getPropertyValue('--negative').trim();
-    const colorForce = cssStyle.getPropertyValue('--force').trim();
-    const colorVel = cssStyle.getPropertyValue('--velocity').trim();
-
-    if (opts.showTrail && trailPoints.length > 1) {
-      ctx.strokeStyle = colorParticle;
-      ctx.lineWidth = 2.5; 
-      ctx.globalAlpha = 0.5;
-      ctx.beginPath();
-      const [sx0, sy0] = worldToScreen(trailPoints[0][0], trailPoints[0][1]);
-      ctx.moveTo(sx0, sy0);
-      for (let i = 1; i < trailPoints.length; i++) {
-        const [sx, sy] = worldToScreen(trailPoints[i][0], trailPoints[i][1]);
-        ctx.lineTo(sx, sy);
+      // Play/Pause / Reset Global Controls
+      const btnPlay = document.getElementById('btnPlay');
+      if (btnPlay) {
+        btnPlay.addEventListener('click', () => {
+          isPlaying = !isPlaying;
+          btnPlay.innerHTML = isPlaying ? '<i class="bi bi-pause-fill"></i> Pausar' : '<i class="bi bi-play-fill"></i> Retomar';
+          btnPlay.classList.toggle('primary', isPlaying);
+          if(currentTab==='lorentz') SimLorentz.togglePlay(isPlaying);
+          else SimHall.togglePlay(isPlaying);
+        });
       }
-      ctx.stroke();
-      ctx.globalAlpha = 1.0;
-    }
 
-    if (opts.showVectors) {
-      const v = [state.y[3], state.y[4]];
-      const vMag = Math.hypot(v[0], v[1]);
-      if (vMag > 1e-9) {
-        drawArrow(px, py, px+(v[0]/vMag)*60, py-(v[1]/vMag)*60, colorVel, 3);
+      const btnReset = document.getElementById('btnReset');
+      if (btnReset) {
+        btnReset.addEventListener('click', () => {
+          if(currentTab==='lorentz') SimLorentz.reset();
+          else SimHall.reset();
+        });
       }
-      const F = opts.F;
-      const fMag = Math.hypot(F[0], F[1]);
-      if (fMag > 1e-30) {
-        drawArrow(px, py, px+(F[0]/fMag)*70, py-(F[1]/fMag)*70, colorForce, 3);
+
+      switchTab('lorentz');
+      requestAnimationFrame(loop);
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.control-view').forEach(v => v.classList.remove('active'));
+      const activeView = document.getElementById(tab === 'lorentz' ? 'viewLorentz' : 'viewHall');
+      if(activeView) activeView.classList.add('active');
+      
+      document.getElementById('hudLorentz').style.display = tab === 'lorentz' ? 'flex' : 'none';
+      document.getElementById('hudHall').style.display = tab === 'hall' ? 'flex' : 'none';
+      
+      document.getElementById('legendLorentz').style.display = tab === 'lorentz' ? 'flex' : 'none';
+      document.getElementById('legendHall').style.display = tab === 'hall' ? 'flex' : 'none';
+
+      document.getElementById('appSubtitle').textContent = tab === 'lorentz' 
+        ? 'Movimento e Trajetória 3D de Partículas Individuais.' 
+        : 'Corrente Macro, Portadores Micro e Balanço de Forças Transversais.';
+
+      if(tab === 'lorentz') SimLorentz.reset();
+      else SimHall.reset();
+    }
+
+    function loop(time) {
+      if(!lastTime) lastTime = time;
+      const elapsed = Math.min((time - lastTime) / 1000, 0.05);
+      lastTime = time;
+
+      if(currentTab === 'lorentz') { 
+        SimLorentz.advance(elapsed); 
+        SimLorentz.render(); 
+      } else { 
+        SimHall.advance(elapsed); 
+        SimHall.render(); 
       }
+
+      requestAnimationFrame(loop);
     }
 
-    ctx.beginPath();
-    ctx.fillStyle = colorParticle;
-    ctx.arc(px, py, 9, 0, Math.PI*2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.arc(px - 3, py - 3, 3, 0, Math.PI*2);
-    ctx.fill();
-    
-    ctx.fillStyle = '#FFF';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(opts.sign > 0 ? '+' : '-', px, py);
-  }
+    return { init };
+  })();
 
-  return { init, resize, frame, clearTrail, pushTrailPoint, setScale, getTotalScale, resetView, getSize: () => ({W, H}) };
-})();
+  // Start Application (DOM is loaded)
+  App.init();
 
-/* =========================================================================
-   MÓDULO: UI (Gerenciamento de DOM e Entradas)
-   ========================================================================= */
-const UI = (() => {
-  const values = {};
-  const controls = {};
-  let chargeSign = -1;
-  const listeners = [];
-
-  const PARAMS = {
-    charge: [ { id:'qAbs', label:'Multiplicador Carga (× e)', min:1, max:5, step:1, def:1, unit:'' } ],
-    field: [
-      { id:'Bz', label:'Campo Bz', min:-2, max:2, step:0.1, def:1.0, unit:'T' },
-      { id:'vx', label:'Velocidade Inicial (vx)', min:-5e7, max:5e7, step:1e6, def:1e7, unit:'m/s' },
-      { id:'vy', label:'Velocidade Inicial (vy)', min:-5e7, max:5e7, step:1e6, def:0, unit:'m/s' }
-    ],
-    advanced: [
-      { id:'vz', label:'Velocidade no eixo z (vz)', min:-5e7, max:5e7, step:1e6, def:0, unit:'m/s' },
-      { id:'Bx', label:'Campo Bx', min:-2, max:2, step:0.1, def:0, unit:'T' },
-      { id:'By', label:'Campo By', min:-2, max:2, step:0.1, def:0, unit:'T' }
-    ]
-  };
-
-  const PRESETS = [
-    { label:'Elétron B=1T', sign:-1, qAbs:1, Bz:1, Bx:0, By:0, vx:1e7, vy:0, vz:0 },
-    { label:'Próton B=1T', sign:1, qAbs:1, Bz:1, Bx:0, By:0, vx:1e6, vy:0, vz:0 },
-    { label:'Hélice 3D', sign:-1, qAbs:1, Bz:1, Bx:0.5, By:0, vx:1e7, vy:0, vz:6e6 }
-  ];
-
-  function buildControl(cfg, container) {
-    values[cfg.id] = cfg.def;
-    const wrap = document.createElement('div');
-    wrap.className = 'field';
-    wrap.innerHTML = `
-      <div class="field-header">
-        <label>${cfg.label}</label>
-        <div class="input-with-unit">
-          <input type="number" id="num_${cfg.id}" value="${cfg.def}" step="any">
-          <span class="unit">${cfg.unit}</span>
-        </div>
-      </div>
-      <input type="range" id="rng_${cfg.id}" min="${cfg.min}" max="${cfg.max}" step="${cfg.step}" value="${cfg.def}">
-    `;
-    container.appendChild(wrap);
-
-    const rng = wrap.querySelector(`#rng_${cfg.id}`);
-    const num = wrap.querySelector(`#num_${cfg.id}`);
-
-    const setVal = (v, silent = false) => {
-      v = Math.min(cfg.max, Math.max(cfg.min, v));
-      values[cfg.id] = v;
-      rng.value = v; num.value = v;
-      if (!silent) emitChange();
-    };
-
-    rng.addEventListener('input', () => setVal(parseFloat(rng.value)));
-    num.addEventListener('change', () => setVal(parseFloat(num.value) || 0));
-    controls[cfg.id] = { setVal };
-  }
-
-  function emitChange() { listeners.forEach(fn => fn()); }
-  
-  function setSign(sign, silent = false) {
-    chargeSign = sign;
-    document.querySelectorAll('.charge-selector button').forEach(b => {
-      b.dataset.active = (parseInt(b.dataset.sign,10) === chargeSign) ? 'true' : 'false';
-    });
-    if (!silent) emitChange();
-  }
-
-  function applyPreset(p) {
-    setSign(p.sign, true);
-    Object.keys(p).forEach(k => { if (controls[k]) controls[k].setVal(p[k], true); });
-    emitChange();
-  }
-
-  function init() {
-    PARAMS.charge.forEach(c => buildControl(c, document.getElementById('groupCharge')));
-    PARAMS.field.forEach(c => buildControl(c, document.getElementById('groupFieldVelocity')));
-    PARAMS.advanced.forEach(c => buildControl(c, document.getElementById('groupAdvanced')));
-
-    document.querySelectorAll('.charge-selector button').forEach(btn => {
-      btn.addEventListener('click', () => setSign(parseInt(btn.dataset.sign, 10)));
-    });
-
-    const presetRow = document.getElementById('presetRow');
-    PRESETS.forEach(p => {
-      const b = document.createElement('button');
-      b.textContent = p.label;
-      b.addEventListener('click', () => applyPreset(p));
-      presetRow.appendChild(b);
-    });
-  }
-
-  return { 
-    init, 
-    onChange: (fn) => listeners.push(fn),
-    getParams: () => ({
-      sign: chargeSign,
-      q: chargeSign * values.qAbs * ELEMENTARY_CHARGE,
-      m: chargeSign > 0 ? PROTON_MASS : ELECTRON_MASS,
-      v0: [values.vx, values.vy, values.vz],
-      B: [values.Bx, values.By, values.Bz]
-    }),
-    flags: () => ({
-      showVectors: document.getElementById('chkVectors').checked,
-      showTrail: document.getElementById('chkTrail').checked,
-      showField: document.getElementById('chkField').checked,
-      showFollow: document.getElementById('chkFollow').checked
-    })
-  };
-})();
-
-/* =========================================================================
-   MÓDULO: MAIN (Orquestrador)
-   ========================================================================= */
-(function Main() {
-  Render.init(document.getElementById('scene'));
-  UI.init();
-
-  let state = null, simTime = 0, autoPace = 1, substepDt = 1e-3, playing = true, lastT = null, dq0 = null;
-  let driftXY = [0, 0];
-  const PACE_S_PER_REV = 2; 
-  
-  function resetState() {
-    const p = UI.getParams();
-    dq0 = Physics.derivedQuantities([0,0,0, p.v0[0], p.v0[1], p.v0[2]], {q:p.q, m:p.m, B:p.B});
-    
-    const Bmag = Math.hypot(p.B[0], p.B[1], p.B[2]);
-    if (Bmag > 1e-30) {
-      const Bhat = [p.B[0]/Bmag, p.B[1]/Bmag, p.B[2]/Bmag];
-      const vPar = p.v0[0]*Bhat[0] + p.v0[1]*Bhat[1] + p.v0[2]*Bhat[2];
-      driftXY = [Bhat[0]*vPar, Bhat[1]*vPar];
-    } else {
-      driftXY = [p.v0[0], p.v0[1]]; 
-    }
-
-    let L = dq0.r && dq0.r > 0 ? dq0.r : Math.max(dq0.speed, 1e-9);
-    const { W, H } = Render.getSize();
-    const targetPx = Math.min(W, H) * 0.35; 
-    Render.setScale(targetPx / L);
-    
-    Render.resetView();
-
-    if (dq0.T) {
-      autoPace = dq0.T / PACE_S_PER_REV;
-      substepDt = dq0.T / 50; 
-    } else {
-      autoPace = 1 / 3; 
-      substepDt = 1 / 200;
-    }
-
-    state = { y: [0, 0, 0, p.v0[0], p.v0[1], p.v0[2]] };
-    simTime = 0;
-    Render.clearTrail();
-    Render.pushTrailPoint(0,0);
-    
-    updateFixedReadouts();
-  }
-
-  function updateFixedReadouts() {
-    const p = UI.getParams();
-    const dq = Physics.derivedQuantities(state.y, {q:p.q, m:p.m, B:p.B});
-    
-    document.getElementById('outR').innerHTML = dq.r ? `${Units.format(dq.r, 'm')}` : '—';
-    document.getElementById('outT').innerHTML = dq.T ? `${Units.format(dq.T, 's')}` : '—';
-    document.getElementById('outV').innerHTML = `${Units.format(dq.speed, 'm/s')} <span class="unit">(${((dq.speed/C_LIGHT)*100).toFixed(1)}% c)</span>`;
-    
-    document.getElementById('particleCaption').innerHTML = `
-      <strong>Dados da Partícula:</strong><br>
-      Carga (q): ${Units.format(p.q, 'C')}<br>
-      Massa (m): ${Units.format(p.m, 'kg')}
-    `;
-  }
-
-  function updateDynamicInfo() {
-    const totalScale = Render.getTotalScale();
-    const pxScaleText = `Escala Adaptativa: <b>1 px = ${Units.format(1 / totalScale, 'm')}</b>`;
-    
-    document.getElementById('scaleNote').innerHTML = dq0.T ? 
-      `Tempo Real de 1 volta: <b>${Units.format(dq0.T,'s')}</b>. <br>${pxScaleText}` : 
-      `Movimento retilíneo uniforme. <br>${pxScaleText}`;
-  }
-
-  function step(elapsedReal) {
-    if (!playing) return;
-    const dtReal = Math.min(elapsedReal, 0.05); 
-    const timeToRun = dtReal * autoPace;
-    const substeps = Math.ceil(timeToRun / substepDt);
-    const dt = timeToRun / substeps;
-    
-    const p = UI.getParams();
-    for(let i=0; i<substeps; i++) {
-      state.y = Physics.advance(state.y, {q:p.q, m:p.m, B:p.B}, dt);
-    }
-    simTime += timeToRun;
-    
-    if (UI.flags().showTrail) Render.pushTrailPoint(state.y[0], state.y[1]);
-  }
-
-  function loop(t) {
-    if (!lastT) lastT = t;
-    step((t - lastT) / 1000);
-    lastT = t;
-
-    const p = UI.getParams();
-    const F = Physics.cross([state.y[3], state.y[4], state.y[5]], p.B).map(c => c * p.q);
-    const flags = UI.flags();
-    
-    updateDynamicInfo(); 
-    
-    Render.frame(state, {
-      ...flags,
-      camera: flags.showFollow ? {x: driftXY[0] * simTime, y: driftXY[1] * simTime} : {x:0, y:0},
-      sign: p.sign, 
-      Bx: p.B[0], 
-      By: p.B[1], 
-      Bz: p.B[2], 
-      F: F
-    });
-    
-    requestAnimationFrame(loop);
-  }
-
-  // Setup de Eventos
-  UI.onChange(resetState);
-  document.getElementById('btnPlay').addEventListener('click', (e) => {
-    playing = !playing;
-    e.currentTarget.innerHTML = playing ? '<i class="bi bi-pause-fill"></i> Pausar' : '<i class="bi bi-play-fill"></i> Retomar';
-    e.currentTarget.className = playing ? 'primary' : '';
-  });
-  document.getElementById('btnReset').addEventListener('click', resetState);
-  document.getElementById('btnClearTrail').addEventListener('click', Render.clearTrail);
-
-  resetState();
-  requestAnimationFrame(loop);
-})();
+});
 </script>
 </body>
 </html>
