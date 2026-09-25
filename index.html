@@ -2,987 +2,377 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Laboratório Virtual de Eletromagnetismo</title>
-<!-- Fontes -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<!-- Bootstrap Icons -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Simulador de Lorentz 3D</title>
 <style>
-  :root {
-    --bg-page: #F3F4F6;
-    --bg-panel: #FFFFFF;
-    --border: #E5E7EB;
-    --border-hover: #D1D5DB;
-    
-    --text-main: #1F2937;
-    --text-muted: #6B7280;
-    --text-dim: #9CA3AF;
-    
-    --primary: #2563EB;
-    --primary-hover: #1D4ED8;
-    
-    /* Cores Físicas */
-    --positive: #EF4444; 
-    --negative: #3B82F6; 
-    --field: #10B981;    
-    --force-mag: #8B5CF6; 
-    --force-elec: #EC4899;   
-    --velocity: #F59E0B; 
-    --current: #DC2626;
-    
-    --font-sans: 'Inter', system-ui, sans-serif;
-    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-    
-    --radius-md: 8px;
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-float: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  
-  body {
-    background-color: var(--bg-page);
-    color: var(--text-main);
-    font-family: var(--font-sans);
-    height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  /* --- HEADER E TABS --- */
-  header.app-header {
-    background: var(--bg-panel);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    z-index: 10;
-  }
-  
-  .top-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 24px;
-  }
-
-  .title-area h1 { font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-  .title-area p { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
-
-  .tab-bar {
-    display: flex;
-    padding: 0 24px;
-    gap: 16px;
-    background: #FAFAFA;
-    border-top: 1px solid var(--border);
-  }
-
-  .tab-btn {
-    background: transparent;
-    border: none;
-    padding: 12px 4px;
-    font-family: var(--font-sans);
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    cursor: pointer;
-    border-bottom: 3px solid transparent;
-    transition: all 0.2s;
-  }
-  .tab-btn:hover { color: var(--primary); }
-  .tab-btn.active {
-    color: var(--primary);
-    border-bottom-color: var(--primary);
-  }
-
-  /* --- LAYOUT --- */
-  .app-layout {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-  }
-
-  /* ÁREA DE SIMULAÇÃO ROBUSTA */
-  .simulation-area {
-    flex: 1;
-    position: relative;
-    background: #FFFFFF;
-    min-height: 0; /* Previne colapso flexbox */
-    min-width: 0;
-  }
-
-  canvas#scene {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    display: block;
-    cursor: grab;
-    touch-action: none;
-    z-index: 1;
-  }
-  canvas#scene:active { cursor: grabbing; }
-
-  /* Elementos Flutuantes Canvas */
-  .hud-overlay {
-    position: absolute;
-    top: 16px;
-    left: 16px;
-    right: 16px;
-    display: flex;
-    justify-content: space-between;
-    pointer-events: none;
-    z-index: 5;
-  }
-
-  .hud-panel {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .readout-card {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(4px);
-    border: 1px solid var(--border);
-    padding: 8px 12px;
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
-    pointer-events: auto;
-  }
-  .readout-card.highlight { border-color: var(--primary); background: #F8FAFC; }
-  .readout-card .label { font-size: 0.7rem; text-transform: uppercase; font-weight: 600; color: var(--text-muted); }
-  .readout-card .value { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin-top: 2px; }
-  .readout-card .unit { font-size: 0.8rem; color: var(--text-dim); }
-
-  .floating-legend {
-    position: absolute;
-    bottom: 16px;
-    right: 16px;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 10px 14px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    font-size: 0.75rem;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    pointer-events: none;
-    z-index: 5;
-  }
-  .legend-item { display: flex; align-items: center; gap: 6px; font-weight: 500;}
-  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-
-  .sim-controls {
-    position: absolute;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--bg-panel);
-    padding: 8px;
-    border-radius: 50px;
-    box-shadow: var(--shadow-float);
-    display: flex;
-    gap: 8px;
-    border: 1px solid var(--border);
-    z-index: 5;
-  }
-
-  button.action-btn {
-    font-family: var(--font-sans);
-    font-weight: 600;
-    font-size: 0.85rem;
-    padding: 8px 16px;
-    border-radius: 20px;
-    border: 1px solid var(--border);
-    background: var(--bg-page);
-    color: var(--text-main);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  button.action-btn:hover { background: var(--border); }
-  button.action-btn.primary { background: var(--primary); color: white; border-color: var(--primary); }
-  button.action-btn.primary:hover { background: var(--primary-hover); }
-
-  /* --- PAINEL DE CONTROLE LATERAL --- */
-  .control-panel {
-    width: 100%;
-    max-width: 400px;
-    background: var(--bg-panel);
-    border-left: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    box-shadow: -2px 0 10px rgba(0,0,0,0.02);
-    z-index: 10;
-  }
-  .control-view { display: none; flex-direction: column; }
-  .control-view.active { display: flex; }
-
-  .panel-section { padding: 20px; border-bottom: 1px solid var(--border); }
-  .panel-title { font-size: 0.85rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-  .panel-title i { font-size: 1.1rem; color: var(--primary); }
-
-  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-  .field-header { display: flex; justify-content: space-between; align-items: center; }
-  .field-header label { font-size: 0.85rem; font-weight: 500; }
-  
-  .input-with-unit {
-    display: flex; align-items: center; background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px;
-  }
-  .input-with-unit input[type="number"], .input-with-unit select {
-    width: 70px; border: none; background: transparent; font-family: var(--font-mono); font-size: 0.85rem; text-align: right; outline: none; color: var(--primary); font-weight: 600;
-  }
-  .input-with-unit select { width: 120px; text-align: left; font-family: var(--font-sans); }
-  .input-with-unit .unit { font-size: 0.75rem; color: var(--text-muted); margin-left: 4px; }
-
-  input[type="range"] {
-    -webkit-appearance: none; width: 100%; height: 6px; background: var(--border); border-radius: 3px; outline: none;
-  }
-  input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; transition: transform 0.1s;
-  }
-  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
-
-  .toggle-group { display: flex; gap: 8px; margin-bottom: 16px; }
-  .toggle-group button { flex: 1; border-radius: var(--radius-md); padding: 8px; font-size: 0.85rem; border: 1px solid var(--border); background: var(--bg-page); cursor:pointer; font-weight:600;}
-  .toggle-group button.active { background: #EFF6FF; color: var(--primary); border-color: var(--primary); }
-
-  .switch-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  .switch-row label { font-size: 0.85rem; cursor: pointer; }
-
-  .note { font-size: 0.75rem; color: var(--text-muted); line-height: 1.5; background: var(--bg-page); padding: 10px; border-radius: var(--radius-md); margin-top: 10px; }
-
-  ::-webkit-scrollbar { width: 8px; }
-  ::-webkit-scrollbar-track { background: var(--bg-page); }
-  ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 4px; }
-
-  /* Mobile Adaptações */
-  @media (max-width: 900px) {
-    .app-layout { flex-direction: column; }
-    .simulation-area { flex: 1 1 45%; min-height: 40vh; }
-    .control-panel { flex: 1 1 55%; max-width: 100%; border-left: none; border-top: 1px solid var(--border); }
-    .top-bar { padding: 8px 12px; }
-    .tab-bar { padding: 0 12px; }
-    .floating-legend { display: none; }
-    .hud-panel { justify-content: space-between; width: 100%; }
-    .readout-card { flex: 1; text-align: center; padding: 4px; }
-    .sim-controls { bottom: 8px; width: 95%; }
-  }
+:root{--bg:#F3F4F6;--pn:#fff;--bd:#E5E7EB;--tx:#1F2937;--mu:#6B7280;--pr:#2563EB;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,Segoe UI,sans-serif;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{flex:none;background:var(--pn);border-bottom:1px solid var(--bd);padding:8px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+h1{font-size:clamp(.95rem,2.6vw,1.15rem);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eq{flex:none;font:600 clamp(.75rem,2.4vw,.95rem) var(--mono);color:var(--pr);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:4px 9px}
+main{flex:1;min-height:0;display:flex}
+#sim{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;background:#fff}
+#dash{flex:none;display:flex;gap:6px;padding:8px;overflow-x:auto;border-bottom:1px solid var(--bd);scrollbar-width:none}
+#dash::-webkit-scrollbar{display:none}
+.card{flex:0 0 auto;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:4px 9px;white-space:nowrap}
+.card b{display:block;font-size:.62rem;color:var(--mu);font-weight:600}
+.card span{font:.82rem var(--mono)}
+#stage{flex:1;min-height:0;position:relative;overflow:hidden}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#leg{position:absolute;left:8px;bottom:8px;right:8px;display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.72rem;pointer-events:none}
+#leg span{background:rgba(255,255,255,.85);border-radius:10px;padding:1px 6px}
+#leg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+#leg b{font-weight:500}
+.lt{display:none}
+#bar{flex:none;display:flex;justify-content:center;gap:6px;padding:8px;border-top:1px solid var(--bd);background:var(--pn)}
+#bar button{flex:0 1 112px}
+aside{flex:none;width:clamp(300px,32vw,400px);min-height:0;background:var(--pn);border-left:1px solid var(--bd);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.sec{padding:14px 16px;border-bottom:1px solid var(--bd)}
+h2{font-size:.85rem;color:var(--mu);margin-bottom:10px}
+button{font:600 .8rem system-ui,sans-serif;padding:7px 13px;border-radius:18px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);cursor:pointer;transition:all 0.15s ease}
+button:hover{background:var(--bd)}
+button.pri,button.on{background:var(--pr);border-color:var(--pr);color:#fff}
+.row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.fld{margin-bottom:12px}
+.fh{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.82rem;margin-bottom:5px}
+.fh div{display:flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:2px 6px;font-size:.72rem;color:var(--mu);white-space:nowrap}
+.fh input{width:84px;border:0;background:transparent;text-align:right;font:600 .82rem var(--mono);color:var(--pr);outline:0}
+input[type=range]{width:100%;accent-color:var(--pr)}
+.sw{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:.82rem;margin-bottom:9px}
+.sw input{flex:none}
+.note{font-size:.75rem;line-height:1.6;color:var(--mu);background:var(--bg);border-radius:8px;padding:9px;margin-top:8px;overflow-wrap:anywhere}
+@media(min-width:601px){.lt{display:inline}}
+@media(max-width:800px){
+  main{flex-direction:column}
+  #sim{flex:none;height:clamp(270px,46vh,520px);height:clamp(270px,46dvh,520px)}
+  aside{flex:1;width:auto;border-left:0;border-top:1px solid var(--bd)}
+  .fh input{font-size:16px}
+}
+@media(max-height:520px) and (orientation:landscape){
+  main{flex-direction:row}
+  #sim{flex:1;height:auto}
+  aside{flex:none;width:clamp(260px,40vw,340px);border-left:1px solid var(--bd);border-top:0}
+  header{padding:4px 12px}#dash,#bar{padding:5px}.card{padding:2px 7px}
+}
+@media(pointer:coarse){button{min-height:42px}input[type=range]{height:30px}.sw input{width:22px;height:22px}}
 </style>
 </head>
 <body>
-
-<header class="app-header">
-  <div class="top-bar">
-    <div class="title-area">
-      <h1><i class="bi bi-magnet-fill" style="color:var(--primary);"></i> Lab Eletromagnetismo</h1>
-      <p id="appSubtitle">Dinâmica Interativa em Nível Microscópico e Macroscópico.</p>
-    </div>
+<header><h1>Simulador de Lorentz 3D</h1><div class="eq">F = q(v × B)</div></header>
+<main>
+<section id="sim">
+  <div id="dash"></div>
+  <div id="stage">
+    <canvas id="scene" role="img" aria-label="Trajetória 3D da partícula carregada"></canvas>
+    <div id="leg"><span><i style="background:#F59E0B"></i>v<b class="lt"> velocidade</b></span><span><i style="background:#8B5CF6"></i>F<b class="lt"> força (∝ |v⊥|)</b></span><span><i style="background:#10B981"></i>B<b class="lt"> campo</b></span></div>
   </div>
-  <div class="tab-bar">
-    <button class="tab-btn active" data-tab="lorentz">Força de Lorentz</button>
-    <button class="tab-btn" data-tab="hall">Efeito Hall</button>
+  <div id="bar"><button id="play" class="pri">Iniciar</button><button id="reset">Resetar Posição</button><button id="clr">Limpar Rastro</button></div>
+</section>
+<aside>
+  <div class="sec"><h2>Cenários</h2><div class="row" id="pre"></div></div>
+  <div class="sec"><h2>Partícula</h2><div class="row" id="kinds"></div><div class="note" id="cap"></div></div>
+  <div class="sec"><h2>Campo magnético B (T)</h2><div id="gB"></div>
+    <div class="note"><b>Dica:</b> Mude o campo enquanto a simulação roda para ver a curvatura e o raio da trajetória se adaptarem instantaneamente.</div>
   </div>
-</header>
-
-<div class="app-layout">
-  
-  <!-- ÁREA DO CANVAS -->
-  <section class="simulation-area" id="simContainer">
-    
-    <div class="hud-overlay">
-      <!-- HUD Lorentz -->
-      <div class="hud-panel" id="hudLorentz">
-        <div class="readout-card"><div class="label">Raio (r)</div><div class="value" id="outR">—</div></div>
-        <div class="readout-card"><div class="label">Período (T)</div><div class="value" id="outT">—</div></div>
-        <div class="readout-card"><div class="label">Velocidade |v|</div><div class="value" id="outV">—</div></div>
-      </div>
-      <!-- HUD Hall -->
-      <div class="hud-panel" id="hudHall" style="display: none;">
-        <div class="readout-card highlight">
-          <div class="label">Tensão de Hall (Vh)</div>
-          <div class="value" id="outVh" style="color: var(--primary);">—</div>
-        </div>
-        <div class="readout-card">
-          <div class="label">Vel. Deriva (vd)</div>
-          <div class="value" id="outVd">—</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Canvas Principal Compartilhado -->
-    <canvas id="scene" role="img" aria-label="Simulação Física"></canvas>
-
-    <!-- Legenda Lorentz -->
-    <div class="floating-legend" id="legendLorentz">
-      <div class="legend-item"><span class="dot" style="background:var(--negative)"></span> Elétron / Carga (-)</div>
-      <div class="legend-item"><span class="dot" style="background:var(--positive)"></span> Próton / Carga (+)</div>
-      <div class="legend-item"><span class="dot" style="background:var(--field)"></span> Campo Mag. (B)</div>
-      <div class="legend-item"><span class="dot" style="background:var(--force-mag)"></span> Força Mag. (F)</div>
-    </div>
-
-    <!-- Legenda Hall -->
-    <div class="floating-legend" id="legendHall" style="display: none;">
-      <div class="legend-item"><span class="dot" style="background:var(--current)"></span> Sentido da Corrente (I)</div>
-      <div class="legend-item"><span class="dot" style="background:var(--field)"></span> Campo Mag. (B)</div>
-      <div class="legend-item"><span class="dot" style="background:var(--force-mag)"></span> Força Magnética (Fm)</div>
-      <div class="legend-item"><span class="dot" style="background:var(--force-elec)"></span> Força Elétrica (Fe)</div>
-    </div>
-
-    <div class="sim-controls">
-      <button id="btnPlay" class="action-btn primary"><i class="bi bi-pause-fill"></i> Pausar</button>
-      <button id="btnReset" class="action-btn"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
-    </div>
-  </section>
-
-  <!-- PAINEL DE CONTROLE LATERAL -->
-  <aside class="control-panel" id="controlPanel">
-    
-    <!-- CONTROLES: LORENTZ -->
-    <div class="control-view active" id="viewLorentz">
-      <div class="panel-section">
-        <div class="panel-title"><i class="bi bi-lightning-charge"></i> Partícula</div>
-        <div class="toggle-group" id="chargeToggle">
-          <button data-sign="1">Próton (+)</button>
-          <button data-sign="-1" class="active">Elétron (-)</button>
-        </div>
-        <div id="lorCharge"></div>
-        <div class="note" id="particleCaption"></div>
-      </div>
-      <div class="panel-section">
-        <div class="panel-title"><i class="bi bi-magnet"></i> Ambiente 3D</div>
-        <div id="lorField"></div>
-      </div>
-      <div class="panel-section">
-        <div class="panel-title"><i class="bi bi-camera-video"></i> Visualização</div>
-        <div class="switch-row"><label>Câmera acompanha deriva</label><input type="checkbox" id="lorFollow" checked></div>
-        <div class="switch-row"><label>Mostrar vetores (v, F)</label><input type="checkbox" id="lorVectors" checked></div>
-        <div class="switch-row"><label>Mostrar Rastro</label><input type="checkbox" id="lorTrail" checked></div>
-      </div>
-    </div>
-
-    <!-- CONTROLES: HALL -->
-    <div class="control-view" id="viewHall">
-      <div class="panel-section">
-        <div class="panel-title"><i class="bi bi-layers"></i> Material Condutor</div>
-        <div class="field">
-          <div class="field-header"><label>Material</label></div>
-          <div class="input-with-unit" style="padding: 6px;">
-            <select id="hallMaterial">
-              <option value="cu">Cobre (Cu)</option>
-              <option value="au">Ouro (Au)</option>
-              <option value="si_n">Silício Tipo N</option>
-              <option value="si_p">Silício Tipo P</option>
-            </select>
-          </div>
-        </div>
-        <div id="hallGeom"></div>
-        <div class="note" id="hallMaterialDesc"></div>
-      </div>
-      <div class="panel-section">
-        <div class="panel-title"><i class="bi bi-magnet"></i> Circuito e Campo</div>
-        <div id="hallCircuit"></div>
-      </div>
-      <div class="panel-section">
-        <div class="panel-title"><i class="bi bi-info-circle"></i> Física do Efeito Hall</div>
-        <div class="note">
-          No estado estacionário, os portadores de carga se acumulam nas bordas criando um Campo Elétrico transversal.<br><br>
-          A Voltagem de Hall ocorre quando a <b>Força Elétrica (Fe) anula exatamente a Força Magnética (Fm)</b>, permitindo que a corrente flua em linha reta.
-        </div>
-      </div>
-    </div>
-    
-  </aside>
-
-</div>
-
+  <div class="sec"><h2>Velocidade inicial v (m/s)</h2><div id="gV"></div></div>
+  <div class="sec"><h2>Câmera e exibição</h2>
+    <div class="row"><button id="vTop">Vista XY</button><button id="vSide">Vista XZ</button><button id="vYZ">Vista YZ</button><button id="v3d">3D livre</button></div>
+    <div class="row"><button id="fitBtn">Ajustar zoom</button><button id="alignBtn">Alinhar B à câmera</button></div>
+    <div class="sw"><label for="cFollow">Câmera acompanha o centro de guia</label><input type="checkbox" id="cFollow" checked></div>
+    <div class="sw"><label for="cVec">Mostrar vetores v e F</label><input type="checkbox" id="cVec" checked></div>
+    <div class="sw"><label for="cTrail">Desenhar trajetória</label><input type="checkbox" id="cTrail" checked></div>
+    <div class="sw"><label for="cField">Desenhar linhas de campo B</label><input type="checkbox" id="cField" checked></div>
+    <div class="sw"><label for="cRadius">Mostrar disco de referência do raio r</label><input type="checkbox" id="cRadius" checked></div>
+    <div class="note">Arraste (1 dedo) para girar · scroll ou pinça para zoom · duplo clique/toque reinicia a câmera.</div>
+    <div class="note" id="info"></div>
+  </div>
+</aside>
+</main>
 <script>
 'use strict';
+const E=1.602176634e-19,ME=9.1093837015e-31,MP=1.67262192369e-27,C=299792458;
+const PART={e:{q:-1,m:ME,n:'Elétron'},p:{q:1,m:MP,n:'Próton'}};
+const $=id=>document.getElementById(id);
+const add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],sc=(a,k)=>[a[0]*k,a[1]*k,a[2]*k];
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],nrm=a=>Math.hypot(a[0],a[1],a[2]);
+const cr=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const PFX=[[-15,'f'],[-12,'p'],[-9,'n'],[-6,'µ'],[-3,'m'],[0,''],[3,'k'],[6,'M'],[9,'G']];
+function fmt(v,u){
+  if(v==null||!isFinite(v))return '—'; if(v===0)return '0 '+u;
+  const a=Math.abs(v); if(a<1e-15||a>=1e12)return v.toExponential(2)+' '+u;
+  let ch=PFX[5]; for(const p of PFX) if(a>=Math.pow(10,p[0])*.999) ch=p;
+  const s=v/Math.pow(10,ch[0]); return s.toFixed(Math.abs(s)>=100?1:Math.abs(s)>=10?2:3)+' '+ch[1]+u;
+}
 
-// Aguarda o DOM estar 100% carregado antes de instanciar a simulação
-window.addEventListener('DOMContentLoaded', () => {
+/* ---------- Física ---------- */
+function boris(v,q,m,B,dt){
+  const k=q*dt/(2*m),t=sc(B,k),t2=dot(t,t);
+  const vp=add(v,cr(v,t));
+  return add(v,cr(vp,sc(t,2/(1+t2))));
+}
+function derive(v,P){
+  const sp=nrm(v),b=Math.min(1,sp/C),g=1/Math.sqrt(Math.max(1e-12,1-b*b)),Bm=nrm(P.B);
+  if(Bm<1e-12) return {g,sp,Bm:0};
+  const Bh=sc(P.B,1/Bm),vpar=dot(v,Bh),vperp=Math.sqrt(Math.max(0,sp*sp-vpar*vpar));
+  const w=Math.abs(P.q)*Bm/(g*P.m),T=2*Math.PI/w;
+  return {g,sp,Bm,Bh,vpar,vperp,T,w,r:g*P.m*vperp/(Math.abs(P.q)*Bm),pitch:vpar*T};
+}
 
-  // --- CONSTANTES SI ---
-  const E_CHARGE = 1.602176634e-19; 
-  const M_ELECTRON = 9.1093837015e-31; 
-  const M_PROTON = 1.67262192369e-27;
+/* ---------- Controles ---------- */
+const val={Bx:.5,By:0,Bz:1,vx:1e7,vy:0,vz:6e6};let kind='e';const ctl={};
+const CFG=[['gB','Bx','Bx',-2,2,.1,'T'],['gB','By','By',-2,2,.1,'T'],['gB','Bz','Bz',-2,2,.1,'T'],
+ ['gV','vx','vx',-C,C,1e6,'m/s'],['gV','vy','vy',-C,C,1e6,'m/s'],['gV','vz','vz',-C,C,1e6,'m/s']];
 
-  // Materiais (Densidade de portadores 'n' em m^-3 e sinal do portador)
-  const MATERIALS = {
-    cu:   { name: 'Cobre', n: 8.49e28, sign: -1, desc: 'Metal condutor padrão. Altíssima densidade de elétrons livres (Tensão Vh gerada é na escala de microvolts).' },
-    au:   { name: 'Ouro', n: 5.90e28, sign: -1, desc: 'Excelente condutor metálico.' },
-    si_n: { name: 'Silício (Tipo N)', n: 1.00e21, sign: -1, desc: 'Semicondutor dopado com excesso de elétrons. Gera tensões de Hall bem maiores (escala de milivolts).' },
-    si_p: { name: 'Silício (Tipo P)', n: 1.00e21, sign: 1, desc: 'Semicondutor dopado. A corrente é gerada pelo movimento de "Buracos" positivos.' }
+CFG.forEach(([g,id,lb,mn,mx,st,u])=>{
+  const w=document.createElement('div');w.className='fld';
+  w.innerHTML=`<div class="fh"><label>${lb}</label><div><input type="number" step="any" value="${val[id]}"> ${u}</div></div><input type="range" min="${mn}" max="${mx}" step="${st}" value="${val[id]}">`;
+  $(g).appendChild(w);
+  const num=w.querySelector('input[type=number]'),rng=w.querySelector('input[type=range]');
+  
+  const set=(v_val,silent)=>{
+    v_val=Math.min(mx,Math.max(mn,v_val));
+    val[id]=v_val; num.value=v_val; rng.value=v_val;
+    if(!silent){
+      if(id.startsWith('B')){
+        // Altera APENAS o campo B, preservando a posição e tempo para transição suave
+        P.B = [val.Bx, val.By, val.Bz];
+        d = derive(v, P);
+        rate = d.Bm && d.T ? d.T/2 : 1/3;
+        gc0 = guide();
+        readouts(); info();
+      } else {
+        // Altera a velocidade inicial (reseta a posição)
+        reset(false);
+      }
+    }
   };
-
-  // --- MÓDULO: FORMATADOR ---
-  const Units = (() => {
-    const PREFIXES = [ {exp:-12,sym:'p'},{exp:-9,sym:'n'},{exp:-6,sym:'µ'},{exp:-3,sym:'m'},{exp:0,sym:''},{exp:3,sym:'k'},{exp:6,sym:'M'},{exp:9,sym:'G'} ];
-    function format(value, unit) {
-      if (!isFinite(value) || value === 0) return '0 ' + unit;
-      const abs = Math.abs(value);
-      if (abs < 1e-12 || abs >= 1e12) return value.toExponential(2) + ' ' + unit;
-      let chosen = {exp:0, sym:''};
-      for (const p of PREFIXES) { if (abs >= Math.pow(10, p.exp) * 0.9) chosen = p; }
-      const scaled = value / Math.pow(10, chosen.exp);
-      const d = (Math.abs(scaled) >= 100) ? 1 : (Math.abs(scaled) >= 10 ? 2 : 3);
-      return scaled.toFixed(d) + ' ' + chosen.sym + unit;
-    }
-    return { format };
-  })();
-
-  // --- MÓDULO: GERADOR DE UI ---
-  const UIBuilder = (() => {
-    function createSlider(containerId, cfg, onChange) {
-      const container = document.getElementById(containerId);
-      if (!container) return () => {}; // Segurança
-      
-      const wrap = document.createElement('div');
-      wrap.className = 'field';
-      wrap.innerHTML = `
-        <div class="field-header">
-          <label>${cfg.label}</label>
-          <div class="input-with-unit">
-            <input type="number" id="num_${cfg.id}" value="${cfg.def}" step="any">
-            <span class="unit">${cfg.unit}</span>
-          </div>
-        </div>
-        <input type="range" id="rng_${cfg.id}" min="${cfg.min}" max="${cfg.max}" step="${cfg.step}" value="${cfg.def}">
-      `;
-      container.appendChild(wrap);
-
-      const rng = wrap.querySelector(`#rng_${cfg.id}`);
-      const num = wrap.querySelector(`#num_${cfg.id}`);
-
-      const setVal = (v) => {
-        v = Math.min(cfg.max, Math.max(cfg.min, v));
-        rng.value = v; num.value = v;
-        onChange(cfg.id, v);
-      };
-      rng.addEventListener('input', () => setVal(parseFloat(rng.value)));
-      num.addEventListener('change', () => setVal(parseFloat(num.value) || 0));
-      return setVal;
-    }
-    return { createSlider };
-  })();
-
-  // ============================================================================
-  // SISTEMA DE CÂMERA E RENDER GLOBAL
-  // ============================================================================
-  const Engine = (() => {
-    let canvas, ctx, parent;
-    let W = 800, H = 600, DPR = 1;
-    let camX = 0, camY = 0, scale = 1;
-    let isDragging = false, lastX = 0, lastY = 0;
-    let onResizeCallback = null;
-
-    function init() {
-      canvas = document.getElementById('scene');
-      ctx = canvas.getContext('2d');
-      parent = document.getElementById('simContainer');
-      
-      // ResizeObserver garante que o canvas pegue o tamanho exato APÓS o CSS renderizar
-      const resizeObserver = new ResizeObserver(() => {
-        resize();
-        if(onResizeCallback) onResizeCallback();
-      });
-      resizeObserver.observe(parent);
-
-      setupInteractions();
-    }
-
-    function setupInteractions() {
-      // Mouse Pan/Zoom Genérico
-      canvas.addEventListener('mousedown', e => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
-      window.addEventListener('mousemove', e => {
-        if(!isDragging) return;
-        camX -= (e.clientX - lastX) / scale;
-        camY += (e.clientY - lastY) / scale;
-        lastX = e.clientX; lastY = e.clientY;
-      });
-      window.addEventListener('mouseup', () => isDragging = false);
-      window.addEventListener('mouseleave', () => isDragging = false);
-      
-      canvas.addEventListener('wheel', e => {
-        e.preventDefault();
-        const zoomFactor = e.deltaY < 0 ? 1.15 : (1 / 1.15);
-        scale *= zoomFactor;
-      }, {passive: false});
-      
-      // Touch Pan
-      canvas.addEventListener('touchstart', e => {
-        if(e.touches.length === 1) { isDragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; }
-      }, {passive:false});
-      canvas.addEventListener('touchmove', e => {
-        e.preventDefault();
-        if(isDragging && e.touches.length === 1){
-          camX -= (e.touches[0].clientX - lastX) / scale;
-          camY += (e.touches[0].clientY - lastY) / scale;
-          lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
-        }
-      }, {passive:false});
-      canvas.addEventListener('touchend', () => isDragging = false);
-      
-      canvas.addEventListener('dblclick', () => { camX=0; camY=0; if(onResizeCallback) onResizeCallback(); });
-    }
-
-    function resize() {
-      DPR = window.devicePixelRatio || 1;
-      const rect = parent.getBoundingClientRect();
-      // Fallback seguro se largura inicial for 0 no primeiro frame
-      W = rect.width || parent.clientWidth || 800; 
-      H = rect.height || parent.clientHeight || 600;
-      
-      canvas.width = W * DPR; 
-      canvas.height = H * DPR;
-      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    }
-
-    function clear() {
-      ctx.clearRect(0,0,W,H);
-      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0,0,W,H);
-    }
-
-    function drawGrid() {
-      ctx.strokeStyle = 'rgba(0,0,0,0.03)'; ctx.lineWidth = 1;
-      for(let i=0; i<W; i+=50) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,H); ctx.stroke(); }
-      for(let i=0; i<H; i+=50) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(W,i); ctx.stroke(); }
-    }
-
-    function worldToScreen(x, y) { return [ W/2 + (x - camX)*scale, H/2 - (y - camY)*scale ]; }
-    function getDim() { return {W, H, scale}; }
-    function setCamera(x, y, s) { camX = x; camY = y; scale = s; }
-    function setOnResize(cb) { onResizeCallback = cb; }
-    
-    function drawArrow(x1, y1, x2, y2, color, width=2) {
-      const angle = Math.atan2(y2-y1, x2-x1);
-      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
-      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(x2, y2);
-      ctx.lineTo(x2 - 10*Math.cos(angle-0.4), y2 - 10*Math.sin(angle-0.4));
-      ctx.lineTo(x2 - 10*Math.cos(angle+0.4), y2 - 10*Math.sin(angle+0.4));
-      ctx.closePath(); ctx.fill();
-    }
-
-    return { init, clear, drawGrid, worldToScreen, setCamera, getDim, ctx, drawArrow, setOnResize };
-  })();
-
-  // ============================================================================
-  // SIMULAÇÃO 1: FORÇA DE LORENTZ
-  // ============================================================================
-  const SimLorentz = (() => {
-    let params = { qAbs: 1, sign: -1, Bz: 1, vx: 1e7, vy: 0, vz: 0 };
-    let state = { y: [0,0,0, 0,0,0] }, simTime = 0, trail = [];
-    let playing = true, autoPace = 1, dt = 1e-3;
-
-    function initUI() {
-      UIBuilder.createSlider('lorCharge', {id:'lor_q', label:'Carga (x e)', min:1, max:5, step:1, def:1, unit:''}, (id,v)=> {params.qAbs=v; reset();});
-      UIBuilder.createSlider('lorField', {id:'lor_Bz', label:'Campo Bz', min:-2, max:2, step:0.1, def:1, unit:'T'}, (id,v)=> {params.Bz=v; reset();});
-      UIBuilder.createSlider('lorField', {id:'lor_vx', label:'Vel. vx', min:-5e7, max:5e7, step:1e6, def:1e7, unit:'m/s'}, (id,v)=> {params.vx=v; reset();});
-      UIBuilder.createSlider('lorField', {id:'lor_vz', label:'Vel. vz (Hélice)', min:-5e7, max:5e7, step:1e6, def:0, unit:'m/s'}, (id,v)=> {params.vz=v; reset();});
-      
-      document.querySelectorAll('#chargeToggle button').forEach(b => {
-        b.addEventListener('click', e => {
-          document.querySelectorAll('#chargeToggle button').forEach(btn=>btn.classList.remove('active'));
-          e.target.classList.add('active');
-          params.sign = parseInt(e.target.dataset.sign);
-          reset();
-        });
-      });
-    }
-
-    function reset() {
-      trail = []; simTime = 0;
-      state.y = [0,0,0, params.vx, params.vy, params.vz];
-      
-      const q = params.sign * params.qAbs * E_CHARGE;
-      const m = params.sign > 0 ? M_PROTON : M_ELECTRON;
-      const vPerp = Math.hypot(params.vx, params.vy);
-      
-      // Cálculo do raio e período
-      let r = 1;
-      let T = null;
-      if (vPerp > 1e-9 && Math.abs(params.Bz) > 1e-9) {
-        r = (m * vPerp) / (Math.abs(q) * Math.abs(params.Bz));
-        T = (2*Math.PI*m) / (Math.abs(q)*Math.abs(params.Bz));
-      }
-      
-      const dim = Engine.getDim();
-      const safeW = dim.W || 800;
-      const safeH = dim.H || 600;
-      // Previne scale igual a 0 ou infinito
-      const scale = Math.min(safeW, safeH) * 0.35 / (r > 1e-15 ? r : 1);
-      Engine.setCamera(0, 0, scale);
-      
-      autoPace = T ? T/2 : 1/3; // Faz 1 ciclo simulado acontecer a cada 2s reais
-      dt = T ? T/50 : 1/200;
-
-      // HUD
-      const elR = document.getElementById('outR');
-      if(elR) elR.textContent = T ? Units.format(r, 'm') : '—';
-      const elT = document.getElementById('outT');
-      if(elT) elT.textContent = T ? Units.format(T, 's') : '—';
-      const elV = document.getElementById('outV');
-      if(elV) elV.textContent = Units.format(Math.hypot(params.vx,params.vy,params.vz), 'm/s');
-      
-      const caption = document.getElementById('particleCaption');
-      if(caption) caption.innerHTML = `Carga (q): ${Units.format(q,'C')} <br> Massa (m): ${Units.format(m,'kg')}`;
-    }
-
-    function advance(elapsed) {
-      if(!playing) return;
-      const q = params.sign * params.qAbs * E_CHARGE;
-      const m = params.sign > 0 ? M_PROTON : M_ELECTRON;
-      const B = [0, 0, params.Bz];
-      
-      const steps = Math.ceil((elapsed * autoPace) / dt);
-      for(let i=0; i<steps; i++){
-        // Algoritmo de Boris (Alta Precisão Magnética)
-        const v = [state.y[3], state.y[4], state.y[5]];
-        const k = (q * dt) / (2 * m);
-        const t = [B[0]*k, B[1]*k, B[2]*k];
-        const tMagSq = t[0]*t[0] + t[1]*t[1] + t[2]*t[2];
-        const vPrime = [v[0] + v[1]*t[2]-v[2]*t[1], v[1] + v[2]*t[0]-v[0]*t[2], v[2] + v[0]*t[1]-v[1]*t[0]];
-        const s = [2*t[0]/(1+tMagSq), 2*t[1]/(1+tMagSq), 2*t[2]/(1+tMagSq)];
-        const vNew = [v[0] + vPrime[1]*s[2]-vPrime[2]*s[1], v[1] + vPrime[2]*s[0]-vPrime[0]*s[2], v[2] + vPrime[0]*s[1]-vPrime[1]*s[0]];
-        
-        state.y[0] += vNew[0]*dt; state.y[1] += vNew[1]*dt; state.y[2] += vNew[2]*dt;
-        state.y[3] = vNew[0]; state.y[4] = vNew[1]; state.y[5] = vNew[2];
-        simTime += dt;
-      }
-      
-      const checkTrail = document.getElementById('lorTrail');
-      if(checkTrail && checkTrail.checked) {
-        trail.push([state.y[0], state.y[1]]);
-        if(trail.length > 2000) trail.shift();
-      }
-    }
-
-    function render() {
-      Engine.clear(); Engine.drawGrid();
-      const ctx = Engine.ctx;
-      const dim = Engine.getDim();
-
-      // Camera Follow Drift
-      const checkFollow = document.getElementById('lorFollow');
-      if(checkFollow && checkFollow.checked) {
-        // Se houver drift em x,y acompanhamos.
-        // Aqui o campo é só Bz, logo a deriva se dá no eixo Z puro e v_x e v_y orbitam o zero.
-        // Câmera no 2D fica centralizada no xy perfeitamente.
-      }
-
-      // Draw Field Background
-      if(Math.abs(params.Bz) > 0.1) {
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.3)';
-        const step = 60;
-        for(let y=0; y<dim.H; y+=step) {
-          for(let x=0; x<dim.W; x+=step) {
-            if(params.Bz > 0) { ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); }
-            else { ctx.beginPath(); ctx.moveTo(x-3,y-3); ctx.lineTo(x+3,y+3); ctx.moveTo(x-3,y+3); ctx.lineTo(x+3,y-3); ctx.stroke(); }
-          }
-        }
-      }
-
-      const [px, py] = Engine.worldToScreen(state.y[0], state.y[1]);
-      const color = params.sign > 0 ? '#EF4444' : '#3B82F6';
-
-      // Trail
-      const checkTrail = document.getElementById('lorTrail');
-      if(checkTrail && checkTrail.checked && trail.length > 1) {
-        ctx.strokeStyle = color; ctx.globalAlpha = 0.5; ctx.lineWidth = 2;
-        ctx.beginPath();
-        const [sx0, sy0] = Engine.worldToScreen(trail[0][0], trail[0][1]);
-        ctx.moveTo(sx0, sy0);
-        for(let i=1; i<trail.length; i++) {
-          const [sx, sy] = Engine.worldToScreen(trail[i][0], trail[i][1]);
-          ctx.lineTo(sx, sy);
-        }
-        ctx.stroke(); ctx.globalAlpha = 1;
-      }
-
-      // Vectors
-      const checkVectors = document.getElementById('lorVectors');
-      if(checkVectors && checkVectors.checked) {
-        const vx = state.y[3], vy = state.y[4];
-        const vMag = Math.hypot(vx, vy);
-        if(vMag > 1e-9) Engine.drawArrow(px, py, px+(vx/vMag)*60, py-(vy/vMag)*60, '#F59E0B');
-        
-        const q = params.sign * params.qAbs * E_CHARGE;
-        const Fx = q * (vy * params.Bz);
-        const Fy = q * (-vx * params.Bz);
-        const fMag = Math.hypot(Fx, Fy);
-        if(fMag > 1e-30) Engine.drawArrow(px, py, px+(Fx/fMag)*70, py-(Fy/fMag)*70, '#8B5CF6');
-      }
-
-      // Draw Particle
-      ctx.fillStyle = color; ctx.beginPath(); ctx.arc(px, py, 10, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#FFF'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(params.sign > 0 ? '+' : '-', px, py);
-    }
-
-    return { initUI, reset, advance, render, togglePlay: (v) => playing=v };
-  })();
-
-  // ============================================================================
-  // SIMULAÇÃO 2: EFEITO HALL
-  // ============================================================================
-  const SimHall = (() => {
-    let params = { mat: 'cu', I: 5, Bz: 1, width: 10e-3, thick: 1e-3 };
-    let playing = true;
-    let particles = [];
-
-    function initUI() {
-      UIBuilder.createSlider('hallCircuit', {id:'hall_I', label:'Corrente (I)', min:0, max:20, step:0.5, def:5, unit:'A'}, (id,v)=> {params.I=v; updatePhysics();});
-      UIBuilder.createSlider('hallCircuit', {id:'hall_Bz', label:'Campo Magnético (Bz)', min:-2, max:2, step:0.1, def:1, unit:'T'}, (id,v)=> {params.Bz=v; updatePhysics();});
-      UIBuilder.createSlider('hallGeom', {id:'hall_w', label:'Largura Placa (w)', min:5, max:20, step:1, def:10, unit:'mm'}, (id,v)=> {params.width=v*1e-3; updatePhysics();});
-      UIBuilder.createSlider('hallGeom', {id:'hall_t', label:'Espessura (t)', min:0.1, max:2, step:0.1, def:1, unit:'mm'}, (id,v)=> {params.thick=v*1e-3; updatePhysics();});
-      
-      const matSelect = document.getElementById('hallMaterial');
-      if (matSelect) {
-        matSelect.addEventListener('change', e => {
-          params.mat = e.target.value;
-          const descEl = document.getElementById('hallMaterialDesc');
-          if(descEl) descEl.textContent = MATERIALS[params.mat].desc;
-          updatePhysics();
-        });
-        const descEl = document.getElementById('hallMaterialDesc');
-        if(descEl) descEl.textContent = MATERIALS['cu'].desc;
-      }
-    }
-
-    function reset() {
-      particles = [];
-      for(let i=0; i<40; i++) {
-        particles.push({ x: Math.random(), y: Math.random() });
-      }
-      Engine.setCamera(0, 0, 1);
-      updatePhysics();
-    }
-
-    function updatePhysics() {
-      const mat = MATERIALS[params.mat];
-      const n = mat.n;
-      const q = mat.sign * E_CHARGE;
-      
-      // V_H = (I * B) / (n * t * e)
-      const Vh = (params.I * params.Bz) / (n * params.thick * E_CHARGE);
-      // v_d = I / (n * e * A)
-      const area = params.width * params.thick;
-      const vd = params.I / (n * E_CHARGE * area);
-
-      const elVh = document.getElementById('outVh');
-      if(elVh) elVh.textContent = Units.format(Math.abs(Vh), 'V'); // Mostra magnitude da Tensão
-      
-      const elVd = document.getElementById('outVd');
-      if(elVd) elVd.textContent = Units.format(Math.abs(vd), 'm/s');
-    }
-
-    function advance(elapsed) {
-      if(!playing) return;
-      // Fator visual puramente para animar as cargas fluindo
-      const speedVisual = (params.I / 20) * 0.8 * elapsed; 
-      const mat = MATERIALS[params.mat];
-      const dir = mat.sign > 0 ? 1 : -1;
-      
-      particles.forEach(p => {
-        p.x += speedVisual * dir;
-        if(p.x > 1) p.x -= 1;
-        if(p.x < 0) p.x += 1;
-      });
-    }
-
-    function render() {
-      Engine.clear();
-      const ctx = Engine.ctx;
-      const {W, H} = Engine.getDim();
-      if(W === 0 || H === 0) return; // Evitar erros no frame inicial vazio
-      
-      const mat = MATERIALS[params.mat];
-      
-      const pW = W * 0.6;
-      const pH = (params.width / 20e-3) * (H * 0.4); 
-      const px = (W - pW)/2;
-      const py = (H - pH)/2;
-
-      // Draw Field B Background
-      if(Math.abs(params.Bz) > 0.1) {
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.2)';
-        const step = 40;
-        for(let y=0; y<H; y+=step) {
-          for(let x=0; x<W; x+=step) {
-            if(params.Bz > 0) { ctx.beginPath(); ctx.arc(x,y,2,0,Math.PI*2); ctx.fill(); }
-            else { ctx.beginPath(); ctx.moveTo(x-2,y-2); ctx.lineTo(x+2,y+2); ctx.moveTo(x-2,y+2); ctx.lineTo(x+2,y-2); ctx.stroke(); }
-          }
-        }
-      }
-
-      // Fios e Placa Condutora
-      ctx.fillStyle = '#CBD5E1'; ctx.fillRect(0, py + pH/2 - 10, px, 20); // Fio Esq
-      ctx.fillRect(px + pW, py + pH/2 - 10, W, 20); // Fio Dir
-      
-      ctx.fillStyle = '#F8FAFC'; ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 3;
-      ctx.fillRect(px, py, pW, pH); ctx.strokeRect(px, py, pW, pH);
-
-      // Corrente Macro (Seta I)
-      if(params.I > 0) {
-        Engine.drawArrow(px/2 - 20, py + pH/2 - 25, px/2 + 20, py + pH/2 - 25, '#DC2626', 3);
-        ctx.fillStyle = '#DC2626'; ctx.font='bold 14px sans-serif'; ctx.fillText('I', px/2, py + pH/2 - 35);
-      }
-
-      // Animando os portadores em trânsito
-      const pColor = mat.sign > 0 ? '#EF4444' : '#3B82F6';
-      particles.forEach(p => {
-        const cx = px + p.x * pW;
-        const cy = py + p.y * pH;
-        ctx.fillStyle = pColor; ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI*2); ctx.fill();
-      });
-
-      // Efeito Hall: Acúmulo de Cargas nas Bordas (Visual)
-      if(params.I > 0 && Math.abs(params.Bz) > 0.1) {
-        // q(v x B)
-        const forceMagY = (mat.sign * (-mat.sign) * params.Bz); 
-        const topIsPos = forceMagY < 0 ? (mat.sign>0 ? false : true) : (mat.sign>0 ? true : false);
-        
-        const numCharges = Math.min(15, Math.ceil(Math.abs(params.Bz * params.I)*2));
-        ctx.font = 'bold 16px monospace';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        
-        for(let i=1; i<=numCharges; i++) {
-          const cx = px + (i/(numCharges+1)) * pW;
-          // Borda Top
-          ctx.fillStyle = topIsPos ? '#EF4444' : '#3B82F6';
-          ctx.fillText(topIsPos ? '+' : '-', cx, py - 12);
-          // Borda Bottom
-          ctx.fillStyle = !topIsPos ? '#EF4444' : '#3B82F6';
-          ctx.fillText(!topIsPos ? '+' : '-', cx, py + pH + 12);
-        }
-
-        // Voltímetro Conectado nas Bordas Transversais
-        ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(px + pW/2, py); ctx.lineTo(px + pW/2, py - 35); ctx.lineTo(px + pW/2 + 70, py - 35); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(px + pW/2, py + pH); ctx.lineTo(px + pW/2, py + pH + 35); ctx.lineTo(px + pW/2 + 70, py + pH + 35); ctx.stroke();
-        
-        ctx.fillStyle = '#1E293B'; ctx.beginPath(); ctx.arc(px + pW/2 + 70, py + pH/2, 22, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#FFF'; ctx.font = 'bold 16px sans-serif'; ctx.fillText('V', px + pW/2 + 70, py + pH/2);
-
-        // Vetor de Força Mag e Força Elétrica em uma Carga representativa no centro
-        if (particles.length > 0) {
-          const centerP = {x: px + 0.5*pW, y: py + 0.5*pH};
-          ctx.fillStyle = pColor; ctx.beginPath(); ctx.arc(centerP.x, centerP.y, 10, 0, Math.PI*2); ctx.fill();
-          ctx.fillStyle='#FFF'; ctx.font='bold 12px sans-serif'; ctx.fillText(mat.sign>0?'+':'-', centerP.x, centerP.y);
-          
-          const dFm = forceMagY < 0 ? -1 : 1; 
-          Engine.drawArrow(centerP.x, centerP.y, centerP.x, centerP.y + 35*dFm, '#8B5CF6', 3); // Força Magnética
-          Engine.drawArrow(centerP.x, centerP.y, centerP.x, centerP.y - 35*dFm, '#EC4899', 3); // Força Elétrica reativa
-        }
-      }
-    }
-
-    return { initUI, reset, advance, render, togglePlay: (v) => playing=v };
-  })();
-
-  // ============================================================================
-  // APP MANAGER (Orquestrador)
-  // ============================================================================
-  const App = (() => {
-    let currentTab = 'lorentz';
-    let lastTime = null;
-    let isPlaying = true;
-
-    function init() {
-      Engine.init();
-      SimLorentz.initUI();
-      SimHall.initUI();
-
-      // Callback no Resize para reajustar escala dinamicamente
-      Engine.setOnResize(() => {
-        if(currentTab === 'lorentz') SimLorentz.reset();
-        else SimHall.reset();
-      });
-
-      // Tabs Logic
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', e => {
-          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-          e.target.classList.add('active');
-          switchTab(e.target.dataset.tab);
-        });
-      });
-
-      // Play/Pause / Reset Global Controls
-      const btnPlay = document.getElementById('btnPlay');
-      if (btnPlay) {
-        btnPlay.addEventListener('click', () => {
-          isPlaying = !isPlaying;
-          btnPlay.innerHTML = isPlaying ? '<i class="bi bi-pause-fill"></i> Pausar' : '<i class="bi bi-play-fill"></i> Retomar';
-          btnPlay.classList.toggle('primary', isPlaying);
-          if(currentTab==='lorentz') SimLorentz.togglePlay(isPlaying);
-          else SimHall.togglePlay(isPlaying);
-        });
-      }
-
-      const btnReset = document.getElementById('btnReset');
-      if (btnReset) {
-        btnReset.addEventListener('click', () => {
-          if(currentTab==='lorentz') SimLorentz.reset();
-          else SimHall.reset();
-        });
-      }
-
-      switchTab('lorentz');
-      requestAnimationFrame(loop);
-    }
-
-    function switchTab(tab) {
-      currentTab = tab;
-      document.querySelectorAll('.control-view').forEach(v => v.classList.remove('active'));
-      const activeView = document.getElementById(tab === 'lorentz' ? 'viewLorentz' : 'viewHall');
-      if(activeView) activeView.classList.add('active');
-      
-      document.getElementById('hudLorentz').style.display = tab === 'lorentz' ? 'flex' : 'none';
-      document.getElementById('hudHall').style.display = tab === 'hall' ? 'flex' : 'none';
-      
-      document.getElementById('legendLorentz').style.display = tab === 'lorentz' ? 'flex' : 'none';
-      document.getElementById('legendHall').style.display = tab === 'hall' ? 'flex' : 'none';
-
-      document.getElementById('appSubtitle').textContent = tab === 'lorentz' 
-        ? 'Movimento e Trajetória 3D de Partículas Individuais.' 
-        : 'Corrente Macro, Portadores Micro e Balanço de Forças Transversais.';
-
-      if(tab === 'lorentz') SimLorentz.reset();
-      else SimHall.reset();
-    }
-
-    function loop(time) {
-      if(!lastTime) lastTime = time;
-      const elapsed = Math.min((time - lastTime) / 1000, 0.05);
-      lastTime = time;
-
-      if(currentTab === 'lorentz') { 
-        SimLorentz.advance(elapsed); 
-        SimLorentz.render(); 
-      } else { 
-        SimHall.advance(elapsed); 
-        SimHall.render(); 
-      }
-
-      requestAnimationFrame(loop);
-    }
-
-    return { init };
-  })();
-
-  // Start Application (DOM is loaded)
-  App.init();
-
+  rng.oninput=()=>set(parseFloat(rng.value));
+  num.onchange=()=>set(parseFloat(num.value)||0);
+  ctl[id]=set;
 });
+
+Object.keys(PART).forEach(k=>{
+  const b=document.createElement('button');b.textContent=PART[k].n;b.dataset.k=k;
+  b.onclick=()=>{setKind(k);reset(true);};$('kinds').appendChild(b);
+});
+function setKind(k){kind=k;document.querySelectorAll('#kinds button').forEach(b=>b.className=b.dataset.k===k?'on':'');}
+
+const PRE=[['Elétron circular','e',0,0,1,1e7,0,0],['Próton circular','p',0,0,1,1e6,0,0],['Hélice 3D (elétron)','e',.5,0,1,1e7,0,6e6],
+ ['Hélice 3D (próton)','p',0,.6,.8,2e6,0,1e6],['v ∥ B (reta)','e',0,0,1,0,0,1e7],['Relativístico (0,33c)','e',0,0,1,1e8,0,0]];
+PRE.forEach(p=>{
+  const b=document.createElement('button');b.textContent=p[0];
+  b.onclick=()=>{setKind(p[1]);['Bx','By','Bz','vx','vy','vz'].forEach((id,i)=>ctl[id](p[2+i],true));reset(true);};
+  $('pre').appendChild(b);
+});
+setKind('e');
+
+/* ---------- Estado ---------- */
+const cv=$('scene'),cx=cv.getContext('2d');
+// Inicia Pausado!
+let W=0,H=0,scale=1,zoom=1,yaw=-.7,pitch=.9,playing=false,lastT=null,fc=0;
+let P,x,v,gm,d,rate,tSim,gc0,sp0,trail=[];
+const FLD='#10B981',VEL='#F59E0B',FRC='#8B5CF6';
+
+function params(){
+  const k=PART[kind];let v0=[val.vx,val.vy,val.vz];const s=nrm(v0);
+  if(s>C)v0=sc(v0,C/s);
+  return {q:k.q*E,m:k.m,sign:Math.sign(k.q),name:k.n,B:[val.Bx,val.By,val.Bz],v0};
+}
+function guide(){
+  return d.Bm?add(x,sc(cr(v,P.B),gm/(P.q*d.Bm*d.Bm))):x.slice();
+}
+function fit(){
+  if(!W||!d)return;
+  let L=d.Bm?Math.max(d.r,Math.abs(d.pitch)/10):d.sp*3;
+  if(!(L>0))L=1;
+  scale=.3*Math.min(W,H)/L;
+}
+function reset(fitView){
+  P=params();x=[0,0,0];v=P.v0.slice();d=derive(v,P);gm=d.g*P.m;sp0=d.sp;tSim=0;
+  rate=d.Bm&&d.T?d.T/2:1/3;
+  gc0=guide();trail=[[0,0,0]];if(fitView)fit();readouts();info();
+}
+function readouts(){
+  const cards=[['Raio r',d.Bm?fmt(d.r,'m'):'—'],['Período T',d.Bm?fmt(d.T,'s'):'—'],['|v|',fmt(d.sp,'m/s')+' ('+(d.sp/C*100).toFixed(1)+'% c)'],
+   ['v∥ (ao longo de B)',d.Bm?fmt(d.vpar,'m/s'):'—'],['v⊥ (a B)',d.Bm?fmt(d.vperp,'m/s'):'—'],['Passo da hélice',d.Bm?fmt(d.pitch,'m'):'—'],['γ',d.g.toFixed(4)]];
+  $('dash').innerHTML=cards.map(c=>`<div class="card"><b>${c[0]}</b><span>${c[1]}</span></div>`).join('');
+  $('cap').innerHTML=`<b>${P.name}</b><br>q = ${fmt(P.q,'C')} · m = ${fmt(P.m,'kg')}<br>Modelo relativístico: massa efetiva γm = ${fmt(gm,'kg')}`;
+}
+function info(){
+  const deg=a=>(a*180/Math.PI).toFixed(1)+'°';
+  let s=`Tempo simulado: <b>${fmt(tSim,'s')}</b>`+(d.Bm?` (${(tSim/d.T).toFixed(2)} voltas)`:'')+`<br>Ritmo: 1 s real = <b>${fmt(rate,'s')}</b> simulados<br>Escala: 1 px = <b>${fmt(1/(scale*zoom),'m')}</b>`;
+  if(d.Bm){
+    const align=dot(forwardVec(),d.Bh);
+    s+=`<br>Ângulo entre v e B: <b>${deg(Math.atan2(d.vperp,d.vpar))}</b>`;
+    if(Math.abs(align)>.966)s+=`<br>Câmera alinhada com B: <b>${align>0?'⊗ campo entrando na tela':'⊙ campo saindo da tela'}</b>`;
+  }else s+='<br>Sem campo: movimento retilíneo uniforme.';
+  $('info').innerHTML=s;
+}
+
+/* ---------- Projeção ---------- */
+let cam=[0,0,0];
+function rot(p){
+  const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+  const xr=p[0]*cy+p[1]*sy,yr=-p[0]*sy+p[1]*cy;
+  return [xr,p[2]*cp+yr*sp];
+}
+function forwardVec(){
+  const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+  return [-sy*cp,cy*cp,-sp];
+}
+function proj(p){const r=rot(sub(p,cam)),S=scale*zoom;return [W/2+r[0]*S,H/2-r[1]*S];}
+const Lw=()=>.3*Math.min(W,H)/(scale*zoom);
+function arrow(a,b,col,w,hl){
+  const dx=b[0]-a[0],dy=b[1]-a[1];
+  cx.strokeStyle=cx.fillStyle=col;cx.lineWidth=w;cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.stroke();
+  if(Math.hypot(dx,dy)<hl*.8)return;
+  const an=Math.atan2(dy,dx);cx.beginPath();cx.moveTo(b[0],b[1]);
+  cx.lineTo(b[0]-hl*Math.cos(an-.4),b[1]-hl*Math.sin(an-.4));cx.lineTo(b[0]-hl*Math.cos(an+.4),b[1]-hl*Math.sin(an+.4));cx.closePath();cx.fill();
+}
+function fieldBasis(Bh){
+  const a=Math.abs(Bh[0])<.9?[1,0,0]:[0,1,0];
+  let e1=cr(Bh,a);e1=sc(e1,1/nrm(e1));return [e1,cr(Bh,e1)];
+}
+function drawFieldArrows(g,Bh,l){
+  const [e1,e2]=fieldBasis(Bh),s0=dot(g,Bh),st=l*.9;
+  cx.globalAlpha=.4;
+  for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){
+    const base=add(g,add(sc(e1,i*1.6*l),sc(e2,j*1.6*l)));
+    for(let k=Math.ceil((s0-4*l)/st);k<=Math.floor((s0+4*l)/st);k++){
+      const p=add(base,sc(Bh,k*st-s0));arrow(proj(p),proj(add(p,sc(Bh,.5*l))),FLD,1.5,7);
+    }
+  }
+  cx.globalAlpha=1;
+}
+function drawFieldDots(g,Bh,align,l){
+  const [e1,e2]=fieldBasis(Bh),st=l*.6;
+  cx.globalAlpha=.55;
+  for(let i=-5;i<=5;i++)for(let j=-5;j<=5;j++){
+    const p=add(g,add(sc(e1,i*st),sc(e2,j*st))),s=proj(p);
+    if(s[0]<-30||s[0]>W+30||s[1]<-30||s[1]>H+30)continue;
+    if(align>0){
+      cx.strokeStyle=FLD;cx.lineWidth=2;cx.beginPath();
+      cx.moveTo(s[0]-5,s[1]-5);cx.lineTo(s[0]+5,s[1]+5);cx.moveTo(s[0]-5,s[1]+5);cx.lineTo(s[0]+5,s[1]-5);cx.stroke();
+    }else{
+      cx.fillStyle=FLD;cx.beginPath();cx.arc(s[0],s[1],3.2,0,7);cx.fill();
+    }
+  }
+  cx.globalAlpha=1;
+}
+function drawField(g){
+  if(!d.Bm)return;
+  const Bh=d.Bh,l=Lw();
+  if(!(l>1e-9))return;
+  const align=dot(forwardVec(),Bh);
+  if(Math.abs(align)>.966)drawFieldDots(g,Bh,align,l);
+  else drawFieldArrows(g,Bh,l);
+}
+// Desenho aprimorado do disco orbital
+function drawGuideCircle(g,Bh,r){
+  if(!(r>1e-12))return;
+  const [e1,e2]=fieldBasis(Bh);
+  cx.beginPath();
+  for(let i=0;i<=64;i++){
+    const th=i/64*2*Math.PI,p=add(g,add(sc(e1,r*Math.cos(th)),sc(e2,r*Math.sin(th)))),s=proj(p);
+    i?cx.lineTo(s[0],s[1]):cx.moveTo(s[0],s[1]);
+  }
+  // Preenchimento suave do disco orbital
+  cx.fillStyle = FLD; cx.globalAlpha = 0.05; cx.fill();
+  
+  // Contorno tracejado reforçado
+  cx.strokeStyle='#6B7280'; cx.lineWidth=2; cx.setLineDash([4,6]); cx.globalAlpha=0.7;
+  cx.stroke(); cx.setLineDash([]); cx.globalAlpha=1;
+  
+  // Ponto central para destacar o centro de guia real
+  const gs=proj(g);
+  cx.fillStyle='#6B7280'; cx.beginPath(); cx.arc(gs[0],gs[1],3,0,7); cx.fill();
+}
+function draw(){
+  const g=guide();cam=$('cFollow').checked?g:[0,0,0];
+  cx.fillStyle='#fff';cx.fillRect(0,0,W,H);
+  if($('cField').checked)drawField(g);
+  if(d.Bm&&$('cRadius').checked)drawGuideCircle(g,d.Bh,d.r);
+  
+  const col=P.sign>0?'#EF4444':'#3B82F6';
+  if($('cTrail').checked&&trail.length>1){
+    cx.strokeStyle=col;cx.globalAlpha=.6;cx.lineWidth=2.5;cx.beginPath();
+    trail.forEach((p,i)=>{const s=proj(p);i?cx.lineTo(s[0],s[1]):cx.moveTo(s[0],s[1]);});cx.stroke();cx.globalAlpha=1;
+  }
+  
+  const pp=proj(x);
+  if($('cVec').checked&&d.sp>0){
+    const l=.9*Lw();
+    arrow(pp,proj(add(x,sc(v,l/d.sp))),VEL,3,10);
+    if(d.Bm&&d.vperp>1e-9*d.sp){
+      const F=sc(cr(v,P.B),P.q),Fm=Math.abs(P.q)*d.sp*d.Bm;
+      arrow(pp,proj(add(x,sc(F,l/Fm))),FRC,3,10);
+    }
+  }
+  cx.beginPath();cx.fillStyle=col;cx.arc(pp[0],pp[1],8,0,7);cx.fill();
+  cx.fillStyle='#fff';cx.font='bold 12px sans-serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(P.sign>0?'+':'−',pp[0],pp[1]);
+  const o=[W-46,46];cx.font='11px sans-serif';
+  [['x',[1,0,0],'#6B7280'],['y',[0,1,0],'#6B7280'],['z',[0,0,1],'#6B7280'],['B',d.Bm?d.Bh:null,FLD]].forEach(([n,u,c])=>{
+    if(!u)return;const r=rot(u);arrow(o,[o[0]+r[0]*30,o[1]-r[1]*30],c,n==='B'?3:1.5,7);
+    cx.fillStyle=c;cx.fillText(n,o[0]+r[0]*40,o[1]-r[1]*40);
+  });
+}
+
+/* ---------- Loop ---------- */
+function step(el){
+  if(!playing)return;
+  const run=Math.min(el,.05)*rate;
+  const n=d.Bm&&d.T?Math.min(300,Math.max(1,Math.ceil(run/(d.T/200)))):1,dt=run/n;
+  for(let i=0;i<n;i++){const va=v;v=boris(v,P.q,gm,P.B,dt);x=add(x,sc(add(va,v),dt/2));}
+  tSim+=run;
+  if($('cTrail').checked){trail.push(x.slice());if(trail.length>3000)trail.shift();}
+}
+function loop(t){
+  if(lastT==null)lastT=t;step((t-lastT)/1000);lastT=t;
+  draw();if(++fc%12===0)info();requestAnimationFrame(loop);
+}
+function resize(){
+  const D=window.devicePixelRatio||1,p=cv.parentElement;W=p.clientWidth;H=p.clientHeight;
+  cv.width=W*D;cv.height=H*D;cx.setTransform(D,0,0,D,0,0);fit();
+}
+window.addEventListener('resize',resize);
+if(window.ResizeObserver)new ResizeObserver(resize).observe(cv.parentElement);
+
+/* ---------- Interação ---------- */
+const pts=new Map(),pdist=()=>{if(pts.size<2)return 0;const a=[...pts.values()];return Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);};
+const cz=z=>Math.max(.02,Math.min(z,60));let pd=0;
+cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);pd=pdist();};
+cv.onpointermove=e=>{
+  if(!pts.has(e.pointerId))return;const o=pts.get(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);
+  if(pts.size===1){yaw+=(e.clientX-o[0])*.008;pitch=Math.max(-Math.PI/2,Math.min(Math.PI/2,pitch+(e.clientY-o[1])*.008));}
+  else if(pts.size===2){const n=pdist();if(pd)zoom=cz(zoom*n/pd);pd=n;}
+};
+let lastTap=0;
+cv.onpointerup=cv.onpointercancel=e=>{
+  if(pts.size===1){const now=performance.now();if(now-lastTap<350)view(-.7,.9);lastTap=now;}
+  pts.delete(e.pointerId);pd=pdist();
+};
+cv.addEventListener('wheel',e=>{e.preventDefault();zoom=cz(zoom*(e.deltaY<0?1.15:1/1.15));},{passive:false});
+const view=(y,p)=>{yaw=y;pitch=p;zoom=1;};
+cv.ondblclick=()=>view(-.7,.9);
+$('vTop').onclick=()=>view(0,Math.PI/2);$('vSide').onclick=()=>view(0,0);
+$('vYZ').onclick=()=>view(Math.PI/2,0);$('v3d').onclick=()=>view(-.7,.9);
+$('fitBtn').onclick=()=>{fit();info();};
+
+$('alignBtn').onclick = () => {
+  const Bm = nrm([val.Bx, val.By, val.Bz]) || 1, f = forwardVec();
+  ctl.Bx(f[0] * Bm, true); ctl.By(f[1] * Bm, true); ctl.Bz(f[2] * Bm, true);
+  P.B = [val.Bx, val.By, val.Bz]; 
+  d = derive(v, P);
+  trail = [x.slice()]; // Limpa o rastro antigo
+  readouts(); info();
+};
+
+$('play').onclick=e=>{playing=!playing;e.currentTarget.textContent=playing?'Pausar':'Iniciar';e.currentTarget.className=playing?'pri':'';};
+$('reset').onclick=()=>{reset(true);};$('clr').onclick=()=>{trail=[x.slice()];};
+
+setKind('e');resize();reset(true);requestAnimationFrame(loop);
 </script>
 </body>
 </html>
