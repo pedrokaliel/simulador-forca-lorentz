@@ -10,13 +10,13 @@
 </head>
 <body>
 
-  <!-- TELA DE LOADING -->
+  <!-- TELA DE LOADING (primeira visita) -->
   <div id="loading-screen">
     <div class="loading-container" id="loading-box">
       <h1 class="loading-title">Simulador de Lorentz 3D</h1>
       <div class="loading-subtitle">Projeto Acadêmico</div>
       <div class="loading-authors-title">Equipe Desenvolvedora</div>
-      <div class="loading-authors">
+      <div class="loading-authors" id="loadAuthors">
         <span>Pedro Kaliel Vieira Lima</span>
         <span>Gabriel Leite Pasqualli</span>
         <span>Thalys Soares de Lima</span>
@@ -27,91 +27,219 @@
         <div class="loading-spinner"></div>
         <span class="loading-text">Carregando motor gráfico WebGL...</span>
       </div>
+      <div class="loading-hint" id="loadHint" hidden>Clique ou pressione qualquer tecla para continuar</div>
     </div>
   </div>
 
   <header>
     <h1>Simulador de Lorentz 3D</h1>
-    <div class="eq">F = q(v × B)</div>
+    <div class="hd-right">
+      <div class="eq">F = q(v × B)</div>
+      <button id="btnTheme" class="icon" type="button" aria-label="Alternar tema claro/escuro" title="Alternar tema (T)"><i class="bi bi-moon-stars"></i></button>
+      <button id="btnHelp" class="icon" type="button" aria-label="Ajuda, atalhos e créditos" title="Ajuda e atalhos (?)"><i class="bi bi-question-circle"></i></button>
+    </div>
   </header>
 
   <main>
     <section id="sim">
-      <div id="dash"></div>
+      <div id="dash" role="group" aria-label="Grandezas calculadas"></div>
       <div id="stage">
-        <canvas id="scene"></canvas>
+        <canvas id="scene" role="img" aria-label="Trajetória 3D de uma partícula carregada em um campo magnético. Arraste para girar, use scroll ou pinça para zoom."></canvas>
+
+        <div id="badges">
+          <span id="stChip" class="badge" role="status"><i class="dot"></i><span id="stTxt">Pausado</span></span>
+          <span id="relChip" class="badge warn" hidden><i class="bi bi-lightning-charge-fill"></i><span id="relTxt"></span></span>
+        </div>
+
+        <div id="tools">
+          <button id="tPlay" class="icon" type="button" aria-label="Iniciar ou pausar" title="Iniciar/pausar (Espaço)"><i class="bi bi-play-fill"></i></button>
+          <button id="tFull" class="icon" type="button" aria-label="Tela cheia" title="Tela cheia (F)"><i class="bi bi-fullscreen"></i></button>
+        </div>
+
         <div id="leg">
           <span><i class="dot-v"></i>v<b class="lt"> velocidade</b></span>
-          <span><i class="dot-f"></i>F<b class="lt"> força (∝ |v⊥|)</b></span>
+          <span><i class="dot-f"></i>F<b class="lt"> força</b></span>
           <span><i class="dot-b"></i>B<b class="lt"> campo</b></span>
+          <span><i class="dot-r"></i>r<b class="lt"> raio</b></span>
+          <span id="legGrid" hidden><i class="dot-g"></i><b id="legGridTxt"></b></span>
         </div>
+
+        <div id="scalebar" aria-hidden="true"><div id="sbLine"></div><span id="sbLabel"></span></div>
       </div>
       <div id="bar">
-        <button id="play" class="pri"><i class="bi bi-play-fill"></i> Iniciar</button>
-        <button id="reset"><i class="bi bi-arrow-counterclockwise"></i> Resetar</button>
-        <button id="clr"><i class="bi bi-eraser-fill"></i> Limpar Rastro</button>
+        <button id="play" class="pri" type="button"><i class="bi bi-play-fill"></i> Iniciar</button>
+        <button id="stepBtn" type="button" title="Avança um pequeno passo (.)"><i class="bi bi-skip-end-fill"></i> Passo</button>
+        <button id="reset" type="button"><i class="bi bi-arrow-counterclockwise"></i> Resetar</button>
+        <button id="clr" type="button"><i class="bi bi-eraser-fill"></i> Limpar Rastro</button>
       </div>
     </section>
 
     <aside>
-      <div class="sec">
-        <h2>Cenários</h2>
-        <div class="row" id="pre"></div>
-      </div>
-      <div class="sec">
-        <h2>Partícula</h2>
-        <div class="row" id="kinds"></div>
-        <div class="note" id="cap"></div>
-      </div>
-      <div class="sec">
-        <h2>Campo magnético B (T)</h2>
-        <div id="gB"></div>
-        <div class="note"><b>Dica:</b> Mude o campo para ver a curvatura adaptar-se instantaneamente.</div>
-      </div>
-      <div class="sec">
-        <h2>Velocidade inicial v (m/s)</h2>
-        <div id="gV"></div>
-      </div>
-      <div class="sec">
-        <h2>Câmera e exibição</h2>
-        <div class="row">
-          <button id="vTop"><i class="bi bi-border-top"></i> Vista XY</button>
-          <button id="vSide"><i class="bi bi-border-right"></i> Vista XZ</button>
-          <button id="vYZ"><i class="bi bi-border-left"></i> Vista YZ</button>
-          <button id="v3d"><i class="bi bi-box"></i> 3D livre</button>
+      <details class="sec" open>
+        <summary>Cenários</summary>
+        <div class="sec-body"><div class="row" id="pre"></div></div>
+      </details>
+
+      <details class="sec" open>
+        <summary>Partícula</summary>
+        <div class="sec-body">
+          <div class="row" id="kinds"></div>
+          <div class="note" id="cap"></div>
         </div>
-        <div class="row">
-          <button id="alignBtn"><i class="bi bi-compass"></i> Alinhar câmera a B</button>
+      </details>
+
+      <details class="sec" open>
+        <summary>Campo magnético B (T)</summary>
+        <div class="sec-body">
+          <div id="gM"></div>
+          <div id="gB"></div>
+          <div class="note"><b>Dica:</b> |B| altera só a intensidade e mantém a direção; os componentes alteram a direção. Mude o campo para ver a curvatura adaptar-se instantaneamente.</div>
         </div>
-        <div class="sw">
-          <label for="cFollow">Câmera acompanha o centro de guia</label>
-          <input type="checkbox" id="cFollow" checked>
+      </details>
+
+      <details class="sec" open>
+        <summary>Velocidade inicial v (m/s)</summary>
+        <div class="sec-body"><div id="gV"></div></div>
+      </details>
+
+      <details class="sec" open>
+        <summary>Simulação</summary>
+        <div class="sec-body">
+          <div class="fld">
+            <div class="fh"><label for="spd">Ritmo da simulação</label><div><output id="spdOut" for="spd">1.00×</output></div></div>
+            <input type="range" id="spd" min="-1" max="0.7" step="0.01" value="0" aria-label="Ritmo da simulação">
+          </div>
+          <div class="row" id="spdBtns">
+            <button type="button" data-s="0.25">0,25×</button>
+            <button type="button" data-s="0.5">0,5×</button>
+            <button type="button" data-s="1">1×</button>
+            <button type="button" data-s="2">2×</button>
+            <button type="button" data-s="4">4×</button>
+          </div>
+          <div class="note" id="info"></div>
         </div>
-        <div class="sw">
-          <label for="cVec">Mostrar vetores v e F</label>
-          <input type="checkbox" id="cVec" checked>
+      </details>
+
+      <details class="sec" open>
+        <summary>Câmera e exibição</summary>
+        <div class="sec-body">
+          <div class="row">
+            <button id="vTop" type="button"><i class="bi bi-border-top"></i> Vista XY</button>
+            <button id="vSide" type="button"><i class="bi bi-border-right"></i> Vista XZ</button>
+            <button id="vYZ" type="button"><i class="bi bi-border-left"></i> Vista YZ</button>
+            <button id="v3d" type="button"><i class="bi bi-box"></i> 3D livre</button>
+          </div>
+          <div class="row">
+            <button id="alignBtn" type="button"><i class="bi bi-compass"></i> Alinhar câmera a B</button>
+          </div>
+
+          <div class="chips" role="group" aria-label="Elementos exibidos">
+            <label class="chip" title="A câmera acompanha o centro da circunferência (centro de guia)"><input type="checkbox" id="cFollow" checked><span><i class="bi bi-bullseye"></i> Seguir centro de guia</span></label>
+            <label class="chip"><input type="checkbox" id="cVec" checked><span><i class="bi bi-arrow-up-right"></i> Vetores v e F</span></label>
+            <label class="chip"><input type="checkbox" id="cLabels" checked><span><i class="bi bi-fonts"></i> Rótulos</span></label>
+            <label class="chip"><input type="checkbox" id="cTrail" checked><span><i class="bi bi-bezier2"></i> Trajetória</span></label>
+            <label class="chip"><input type="checkbox" id="cField" checked><span><i class="bi bi-arrows-move"></i> Linhas de campo B</span></label>
+            <label class="chip"><input type="checkbox" id="cRadius" checked><span><i class="bi bi-circle"></i> Disco do raio</span></label>
+            <label class="chip"><input type="checkbox" id="cGrid"><span><i class="bi bi-grid-3x3"></i> Plano de referência</span></label>
+            <label class="chip"><input type="checkbox" id="cScale" checked><span><i class="bi bi-rulers"></i> Régua de escala</span></label>
+          </div>
+
+          <div class="fld">
+            <div class="fh"><label for="trailLen">Comprimento do rastro</label><div><output id="trailLenOut" for="trailLen">3000 pts</output></div></div>
+            <input type="range" id="trailLen" min="200" max="10000" step="100" value="3000">
+          </div>
+          <div class="fld">
+            <div class="fh"><label for="trailW">Espessura do rastro</label><div><output id="trailWOut" for="trailW">3 px</output></div></div>
+            <input type="range" id="trailW" min="1" max="8" step="0.5" value="3">
+          </div>
+          <div class="fld">
+            <div class="fh"><label for="trailMode">Estilo do rastro</label>
+              <select id="trailMode"><option value="fade">Desvanecer pela idade</option><option value="solid">Cor sólida</option></select>
+            </div>
+          </div>
+          <div class="fld">
+            <div class="fh"><label for="fieldOp">Opacidade do campo B</label><div><output id="fieldOpOut" for="fieldOp">0.35</output></div></div>
+            <input type="range" id="fieldOp" min="0.1" max="1" step="0.05" value="0.35">
+          </div>
+          <div class="fld">
+            <div class="fh"><label for="fieldN">Densidade do campo B</label><div><output id="fieldNOut" for="fieldN">5 × 5</output></div></div>
+            <input type="range" id="fieldN" min="3" max="9" step="2" value="5">
+          </div>
+
+
+          <div class="note"><b>Mouse/toque:</b> arraste para girar · scroll ou pinça para zoom · duplo clique reinicia a vista 3D.</div>
         </div>
-        <div class="sw">
-          <label for="cTrail">Desenhar trajetória</label>
-          <input type="checkbox" id="cTrail" checked>
+      </details>
+
+      <details class="sec" open>
+        <summary>Análise</summary>
+        <div class="sec-body">
+          <table class="cmp" aria-label="Comparação entre teoria e simulação">
+            <thead>
+              <tr>
+                <th scope="col">Teoria × simulação <button class="help" type="button" data-help="cmp" aria-label="Ajuda: teoria versus simulação">?</button></th>
+                <th scope="col">Teórico</th><th scope="col">Simulado</th><th scope="col">Erro</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Raio r</th><td id="cmpRt">—</td><td id="cmpRs">—</td><td id="cmpRe">—</td></tr>
+              <tr><th scope="row">Período T</th><td id="cmpTt">—</td><td id="cmpTs">—</td><td id="cmpTe">—</td></tr>
+              <tr><th scope="row">Energia Ec</th><td id="cmpEt">—</td><td id="cmpEs">—</td><td id="cmpEe">—</td></tr>
+            </tbody>
+          </table>
         </div>
-        <div class="sw">
-          <label for="cField">Desenhar linhas de campo B</label>
-          <input type="checkbox" id="cField" checked>
-        </div>
-        <div class="sw">
-          <label for="cRadius">Mostrar disco de referência</label>
-          <input type="checkbox" id="cRadius" checked>
-        </div>
-        <div class="note"><b>Use o mouse/touch:</b> Arraste para girar · scroll/pinça para zoom · duplo clique reinicia a vista 3D.</div>
-        <div class="note" id="info"></div>
-      </div>
+      </details>
     </aside>
   </main>
+
+  <!-- Ajuda, atalhos e créditos -->
+  <dialog id="about" aria-labelledby="aboutTitle">
+    <div class="dlg">
+      <h2 id="aboutTitle">Sobre o simulador</h2>
+      <p>Simula uma partícula carregada sob a força de Lorentz, <b>F = q(v × B)</b>, com integrador de Boris e tratamento relativístico. Os cartões no topo trazem as grandezas calculadas; toque no <b>?</b> de cada um para entender o que significa.</p>
+      <h3>Atalhos de teclado</h3>
+      <table class="keys">
+        <tr><td><kbd>Espaço</kbd></td><td>Iniciar / pausar</td></tr>
+        <tr><td><kbd>.</kbd></td><td>Avançar um passo</td></tr>
+        <tr><td><kbd>R</kbd></td><td>Resetar</td></tr>
+        <tr><td><kbd>C</kbd></td><td>Limpar rastro</td></tr>
+        <tr><td><kbd>F</kbd></td><td>Tela cheia</td></tr>
+        <tr><td><kbd>T</kbd></td><td>Alternar tema claro/escuro</td></tr>
+        <tr><td><kbd>?</kbd></td><td>Abrir esta ajuda</td></tr>
+      </table>
+      <h3>Equipe desenvolvedora</h3>
+      <div class="loading-authors" id="aboutAuthors"></div>
+      <div class="dlg-actions">
+        <button type="button" id="aboutTour">Rever tutorial</button>
+        <button type="button" class="pri" id="aboutClose">Fechar</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Tutorial da primeira abertura -->
+  <dialog id="tour" aria-labelledby="tourTitle">
+    <div class="dlg">
+      <p class="dlg-step" id="tourStep"></p>
+      <h2 id="tourTitle"></h2>
+      <p id="tourText"></p>
+      <div class="dots" id="tourDots" aria-hidden="true"></div>
+      <div class="dlg-actions">
+        <button type="button" id="tourSkip">Pular</button>
+        <button type="button" id="tourPrev">Voltar</button>
+        <button type="button" class="pri" id="tourNext">Próximo</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="tip" role="tooltip" hidden></div>
+  <div id="sr" class="sr-only" role="status" aria-live="polite"></div>
 
   <!-- Bibliotecas primeiro, depois o código da aplicação -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/lines/LineSegmentsGeometry.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/lines/LineMaterial.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/lines/LineSegments2.js"></script>
   <script src="src/js/app.js"></script>
 </body>
 </html>

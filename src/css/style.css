@@ -181,3 +181,51 @@ input[type=range] { width: 100%; accent-color: var(--pr); }
   input[type=range] { height: 30px; }
   .sw input { width: 22px; height: 22px; }
 }
+
+/* ---------- Novos recursos ---------- */
+:root[data-theme="dark"] { --bg:#111827; --pn:#1F2937; --bd:#374151; --tx:#F3F4F6; --mu:#9CA3AF; --pr:#60A5FA; }
+:root[data-theme="dark"] #sim, :root[data-theme="dark"] #leg span { background: var(--pn); }
+.sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+button:focus-visible, summary:focus-visible, input:focus-visible { outline:2px solid var(--pr); outline-offset:2px; }
+button.icon { padding:6px 9px; border-radius:50%; min-width:34px; }
+.hd-right { display:flex; align-items:center; gap:8px; }
+#badges { position:absolute; top:8px; left:8px; display:flex; gap:6px; z-index:10; }
+.badge { display:inline-flex; align-items:center; gap:6px; font-size:.72rem; font-weight:600; background:var(--pn); border:1px solid var(--bd); border-radius:12px; padding:2px 9px; }
+.badge[hidden] { display:none; }
+.badge .dot { width:8px; height:8px; border-radius:50%; background:var(--mu); }
+.badge.run .dot { background:#10B981; }
+.badge.warn { color:#B45309; }
+#tools { position:absolute; top:8px; right:8px; display:flex; flex-direction:column; gap:6px; z-index:10; }
+details.sec > summary { cursor:pointer; font-weight:700; font-size:.85rem; color:var(--mu); list-style:none; }
+details.sec[open] > summary { margin-bottom:10px; }
+.chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+.chip { position:relative; }
+.chip input { position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer; }
+.chip span { display:inline-block; font-size:.74rem; font-weight:600; padding:4px 10px; border-radius:14px; border:1px solid var(--bd); background:var(--bg); cursor:pointer; }
+.chip input:checked + span { background:var(--pr); border-color:var(--pr); color:#fff; }
+.chip input:focus-visible + span { outline:2px solid var(--pr); outline-offset:2px; }
+select { font:inherit; font-size:.78rem; background:var(--bg); color:var(--tx); border:1px solid var(--bd); border-radius:6px; padding:2px 4px; }
+table.cmp { width:100%; border-collapse:collapse; font-size:.72rem; margin-bottom:10px; }
+.cmp th, .cmp td { text-align:left; padding:3px 4px; border-bottom:1px solid var(--bd); font-family:var(--mono); }
+.cmp th[scope=row] { font-family:inherit; color:var(--mu); }
+.tabs { display:flex; gap:6px; margin-bottom:6px; }
+.tab[aria-selected=true] { background:var(--pr); border-color:var(--pr); color:#fff; }
+#chart { position:static; width:100%; height:150px; background:var(--bg); border-radius:8px; }
+#toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:#111827; color:#fff; padding:8px 14px; border-radius:10px; font-size:.8rem; opacity:0; pointer-events:none; transition:opacity .2s; z-index:10000; }
+#toast.on { opacity:1; }
+dialog { margin:auto; border:1px solid var(--bd); border-radius:14px; background:var(--pn); color:var(--tx); max-width:min(480px, 92vw); padding:0; }
+dialog::backdrop { background:rgba(0,0,0,.45); }
+.dlg { padding:20px; font-size:.85rem; line-height:1.6; }
+.dlg h2 { font-size:1.1rem; color:var(--tx); } .dlg h3 { font-size:.85rem; margin:12px 0 4px; }
+.dlg-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
+.dlg-step { color:var(--mu); font-size:.72rem; }
+.dlg .loading-authors { margin:4px 0 0; } .dlg .loading-authors span { font-size:.85rem; }
+kbd { font:600 .72rem var(--mono); background:var(--bg); border:1px solid var(--bd); border-radius:4px; padding:0 5px; }
+.keys td { padding:2px 10px 2px 0; }
+.loading-hint { margin-top:1rem; font-size:.8rem; color:var(--mu); }
+#scalebar { position:absolute; right:10px; bottom:34px; z-index:10; font-size:.7rem; color:var(--mu); text-align:center; pointer-events:none; }
+#sbLine { height:5px; border:2px solid var(--mu); border-top:0; margin:0 auto 2px; }
+#scalebar[hidden] { display:none; }
+button.help { padding:0; width:15px; height:15px; min-height:0; border-radius:50%; font-size:.6rem; margin-left:3px; line-height:1; }
+#tip { position:fixed; z-index:10001; max-width:240px; background:#111827; color:#fff; font-size:.75rem; line-height:1.5; padding:8px 10px; border-radius:8px; }
+#tip[hidden] { display:none; }
