@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-  <title>Simulador de Lorentz 3D</title>
-  <link rel="icon" type="image/svg" href="src/images/magnet.svg">
+  <title>Simulador - Força de Lorentz</title>
+  <link rel="icon" type="image/x-icon" href="src/images/magnet.svg">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="src/css/style.css">
 </head>
@@ -13,7 +13,7 @@
   <!-- TELA DE LOADING (primeira visita) -->
   <div id="loading-screen">
     <div class="loading-container" id="loading-box">
-      <h1 class="loading-title">Simulador de Lorentz 3D</h1>
+      <h1 class="loading-title">Simulador - Força de Lorentz</h1>
       <div class="loading-subtitle">Projeto Acadêmico</div>
       <div class="loading-authors-title">Equipe Desenvolvedora</div>
       <div class="loading-authors" id="loadAuthors">
@@ -54,6 +54,8 @@
         <div id="tools">
           <button id="tPlay" class="icon" type="button" aria-label="Iniciar ou pausar" title="Iniciar/pausar (Espaço)"><i class="bi bi-play-fill"></i></button>
           <button id="tFull" class="icon" type="button" aria-label="Tela cheia" title="Tela cheia (F)"><i class="bi bi-fullscreen"></i></button>
+          <button id="tPng" class="icon" type="button" aria-label="Salvar imagem PNG" title="Salvar imagem (P)"><i class="bi bi-camera"></i></button>
+          <button id="tRec" class="icon" type="button" aria-label="Gravar vídeo" title="Gravar vídeo"><i class="bi bi-record-circle"></i></button>
         </div>
 
         <div id="leg">
@@ -136,11 +138,12 @@
           <div class="chips" role="group" aria-label="Elementos exibidos">
             <label class="chip" title="A câmera acompanha o centro da circunferência (centro de guia)"><input type="checkbox" id="cFollow" checked><span><i class="bi bi-bullseye"></i> Seguir centro de guia</span></label>
             <label class="chip"><input type="checkbox" id="cVec" checked><span><i class="bi bi-arrow-up-right"></i> Vetores v e F</span></label>
+            
             <label class="chip"><input type="checkbox" id="cLabels" checked><span><i class="bi bi-fonts"></i> Rótulos</span></label>
             <label class="chip"><input type="checkbox" id="cTrail" checked><span><i class="bi bi-bezier2"></i> Trajetória</span></label>
             <label class="chip"><input type="checkbox" id="cField" checked><span><i class="bi bi-arrows-move"></i> Linhas de campo B</span></label>
             <label class="chip"><input type="checkbox" id="cRadius" checked><span><i class="bi bi-circle"></i> Disco do raio</span></label>
-            <label class="chip"><input type="checkbox" id="cGrid"><span><i class="bi bi-grid-3x3"></i> Plano de referência</span></label>
+            <label class="chip"><input type="checkbox" id="cGrid"><span><i class="bi bi-grid-3x3"></i> Grade de referência</span></label>
             <label class="chip"><input type="checkbox" id="cScale" checked><span><i class="bi bi-rulers"></i> Régua de escala</span></label>
           </div>
 
@@ -166,7 +169,6 @@
             <input type="range" id="fieldN" min="3" max="9" step="2" value="5">
           </div>
 
-
           <div class="note"><b>Mouse/toque:</b> arraste para girar · scroll ou pinça para zoom · duplo clique reinicia a vista 3D.</div>
         </div>
       </details>
@@ -187,6 +189,26 @@
               <tr><th scope="row">Energia Ec</th><td id="cmpEt">—</td><td id="cmpEs">—</td><td id="cmpEe">—</td></tr>
             </tbody>
           </table>
+
+          <div class="tabs" role="tablist" aria-label="Tipo de gráfico">
+            <button type="button" class="tab" role="tab" data-mode="v" aria-selected="true">Velocidade</button>
+            <button type="button" class="tab" role="tab" data-mode="cons" aria-selected="false">Conservação</button>
+          </div>
+          <canvas id="chart" role="img" aria-label="Gráfico da velocidade e da energia da partícula ao longo do tempo simulado"></canvas>
+          <div class="note" id="chartNote"></div>
+        </div>
+      </details>
+
+      <details class="sec">
+        <summary>Exportar e compartilhar</summary>
+        <div class="sec-body">
+          <div class="row">
+            <button id="btnLink" type="button"><i class="bi bi-link-45deg"></i> Copiar link do cenário</button>
+            <button id="btnPng" type="button"><i class="bi bi-camera"></i> Imagem PNG</button>
+            <button id="btnCsv" type="button"><i class="bi bi-filetype-csv"></i> CSV da trajetória</button>
+            <button id="btnRec" type="button"><i class="bi bi-record-circle"></i> Gravar vídeo</button>
+          </div>
+          <div class="note"><b>Atalhos:</b> Espaço inicia/pausa · <kbd>.</kbd> passo · <kbd>R</kbd> reseta · <kbd>C</kbd> limpa o rastro · <kbd>F</kbd> tela cheia · <kbd>P</kbd> imagem · <kbd>T</kbd> tema · <kbd>?</kbd> ajuda.</div>
         </div>
       </details>
     </aside>
@@ -204,6 +226,7 @@
         <tr><td><kbd>R</kbd></td><td>Resetar</td></tr>
         <tr><td><kbd>C</kbd></td><td>Limpar rastro</td></tr>
         <tr><td><kbd>F</kbd></td><td>Tela cheia</td></tr>
+        <tr><td><kbd>P</kbd></td><td>Salvar imagem PNG</td></tr>
         <tr><td><kbd>T</kbd></td><td>Alternar tema claro/escuro</td></tr>
         <tr><td><kbd>?</kbd></td><td>Abrir esta ajuda</td></tr>
       </table>
@@ -232,6 +255,7 @@
   </dialog>
 
   <div id="tip" role="tooltip" hidden></div>
+  <div id="toast" role="status" aria-live="polite"></div>
   <div id="sr" class="sr-only" role="status" aria-live="polite"></div>
 
   <!-- Bibliotecas primeiro, depois o código da aplicação -->
